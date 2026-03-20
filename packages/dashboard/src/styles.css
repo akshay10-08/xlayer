@@ -114,6 +114,47 @@ select {
   font-size: 1.02rem;
 }
 
+.hero-top-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 4px;
+}
+
+.wallet-area {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.wrong-network-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 140, 151, 0.35);
+  background: rgba(255, 105, 120, 0.1);
+  color: #ff8c97;
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.wrong-network-btn:hover:not(:disabled) {
+  background: rgba(255, 105, 120, 0.2);
+}
+
+.wrong-network-btn:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+
 .eyebrow {
   margin: 0 0 10px;
   color: #ff9f5a;
