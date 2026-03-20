@@ -1,0 +1,123 @@
+{
+  "lastUpdated": "2026-03-19T08:40:00.000Z",
+  "market": {
+    "symbol": "XOKB/USDC",
+    "price": 0.8245,
+    "change24h": 7.42,
+    "volume24h": 18420000,
+    "liquidity": "deep"
+  },
+  "consensus": {
+    "direction": "LONG",
+    "weightedConfidence": 0.83,
+    "shouldExecute": true,
+    "riskLevel": "guarded",
+    "reasoning": "Three specialist agents align on trend continuation while risk remains within slippage and exposure limits."
+  },
+  "agents": [
+    {
+      "id": "technical",
+      "name": "Technical Agent",
+      "role": "Price action and indicator synthesis",
+      "direction": "LONG",
+      "confidence": 0.88,
+      "signal": "Breakout continuation",
+      "reasoning": "Price reclaimed the 20 EMA, volatility expanded cleanly, and the current pullback held above the prior range high.",
+      "paidWith": "x402-0xtech-7f21",
+      "latencyMs": 82
+    },
+    {
+      "id": "whale",
+      "name": "Whale Flow Agent",
+      "role": "Large-wallet behavior and smart-money flow",
+      "direction": "LONG",
+      "confidence": 0.79,
+      "signal": "Accumulation detected",
+      "reasoning": "Sustained inflows from tracked smart-money wallets suggest coordinated accumulation rather than noise.",
+      "paidWith": "x402-0xwhale-a113",
+      "latencyMs": 104
+    },
+    {
+      "id": "sentiment",
+      "name": "Sentiment Agent",
+      "role": "Narrative and social momentum",
+      "direction": "NEUTRAL",
+      "confidence": 0.61,
+      "signal": "Narrative cooling",
+      "reasoning": "Social chatter remains positive, but recent mentions are broadening instead of accelerating into a strong catalyst.",
+      "paidWith": "x402-0xsent-2c9e",
+      "latencyMs": 136
+    },
+    {
+      "id": "risk",
+      "name": "Risk Manager",
+      "role": "Exposure and execution safety",
+      "direction": "LONG",
+      "confidence": 0.91,
+      "signal": "Approved with guardrails",
+      "reasoning": "Position sizing stays below max exposure, simulated slippage is acceptable, and there is no concentration breach.",
+      "paidWith": "x402-0xrisk-5ad4",
+      "latencyMs": 67
+    }
+  ],
+  "positions": [
+    {
+      "symbol": "XOKB/USDC",
+      "side": "LONG",
+      "size": "$18,400",
+      "pnl": "+4.9%",
+      "status": "Open",
+      "entry": "0.7812",
+      "stop": "0.7420"
+    },
+    {
+      "symbol": "ETH/USDC",
+      "side": "FLAT",
+      "size": "$0",
+      "pnl": "0.0%",
+      "status": "Watching",
+      "entry": "N/A",
+      "stop": "N/A"
+    }
+  ],
+  "trades": [
+    {
+      "time": "08:32",
+      "symbol": "XOKB/USDC",
+      "action": "BUY",
+      "size": "$5,000",
+      "result": "Queued",
+      "reason": "Consensus passed and simulation cleared"
+    },
+    {
+      "time": "07:58",
+      "symbol": "ETH/USDC",
+      "action": "HOLD",
+      "size": "$0",
+      "result": "Skipped",
+      "reason": "Risk manager blocked the setup"
+    },
+    {
+      "time": "07:14",
+      "symbol": "XOKB/USDC",
+      "action": "BUY",
+      "size": "$3,500",
+      "result": "Filled",
+      "reason": "Momentum and flow matched"
+    }
+  ],
+  "timeline": [
+    48,
+    62,
+    58,
+    71,
+    67,
+    84,
+    79,
+    91,
+    88,
+    94,
+    90,
+    97
+  ]
+}

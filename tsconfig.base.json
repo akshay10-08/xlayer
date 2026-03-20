@@ -1,0 +1,25 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "lib": ["ES2022"],
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "exactOptionalPropertyTypes": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "declaration": true,
+    "declarationMap": true,
+    "sourceMap": true,
+    "resolveJsonModule": true,
+    "esModuleInterop": true,
+    "baseUrl": ".",
+    "paths": {
+      "@signal-swarm/shared": ["packages/shared/src/index.ts"],
+      "@signal-swarm/shared/*": ["packages/shared/src/*"],
+      "@signal-swarm/agents": ["packages/agents/src/index.ts"],
+      "@signal-swarm/agents/*": ["packages/agents/src/*"]
+    }
+  }
+}
