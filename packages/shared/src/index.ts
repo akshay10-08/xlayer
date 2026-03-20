@@ -71,6 +71,23 @@ export interface AgentCard {
   subtitle: string;
 }
 
+export interface ExecutionProof {
+  network: string;
+  status: "EXECUTED" | "SIMULATED" | "REJECTED";
+  txHash: string;
+  explorerUrl: string;
+  fillPrice: number;
+  notionalUsd: number;
+  slippageBps: number;
+  executedAt: string;
+}
+
+export interface DecisionStep {
+  label: string;
+  status: "done" | "skipped" | "blocked";
+  detail: string;
+}
+
 export interface DashboardSnapshot {
   generatedAt: string;
   pair: string;
@@ -92,7 +109,8 @@ export interface DashboardSnapshot {
     exposureUsd: number;
     pnlPct: number;
   }>;
-  auditTrail: string[];
+  executionProof: ExecutionProof;
+  decisionSteps: DecisionStep[];
 }
 
 export interface Candle {

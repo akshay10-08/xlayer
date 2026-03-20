@@ -9,8 +9,7 @@
     "src"
   ],
   "references": [
-    {
-      "path": "../shared"
-    }
+    { "path": "../shared" },
+    { "path": "../agents" }
   ]
 }

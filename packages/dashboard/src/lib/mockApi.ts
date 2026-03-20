@@ -1,4 +1,10 @@
-import type { DashboardSnapshot } from "../types";
+import type {
+  DashboardSnapshot,
+  DecisionStep,
+  ExecutionProof,
+  PaymentRow,
+  RiskGate,
+} from "../types";
 
 const MOCK_PATH = "/mock-data.json";
 const API_URL = (import.meta.env.VITE_SIGNAL_SWARM_API_URL ?? "http://localhost:4000").replace(
@@ -6,14 +12,51 @@ const API_URL = (import.meta.env.VITE_SIGNAL_SWARM_API_URL ?? "http://localhost:
   ""
 );
 
+const AGENT_NAMES: Record<string, string> = {
+  technical: "Technical Agent",
+  whale: "Whale Flow Agent",
+  sentiment: "Sentiment Agent",
+  risk: "Risk Manager",
+};
+
 interface ApiSignal {
   agent: "technical" | "whale" | "sentiment" | "risk";
   action: "BUY" | "SELL" | "HOLD";
   confidence: number;
   reasons: string[];
-  payment: {
-    id: string;
-  };
+  payment: { id: string; amountUsd: number; createdAt: string };
+}
+
+interface ApiReceipt {
+  id: string;
+  targetAgent: string;
+  amountUsd: number;
+  createdAt: string;
+}
+
+interface ApiRisk {
+  action: "APPROVE" | "BLOCK";
+  maxPositionUsd: number;
+  maxSlippageBps: number;
+  flags: string[];
+  reasons: string[];
+}
+
+interface ApiExecutionProof {
+  network: string;
+  status: string;
+  txHash: string;
+  explorerUrl: string;
+  fillPrice: number;
+  notionalUsd: number;
+  slippageBps: number;
+  executedAt: string;
+}
+
+interface ApiDecisionStep {
+  label: string;
+  status: "done" | "skipped" | "blocked";
+  detail: string;
 }
 
 interface ApiSnapshot {
@@ -32,6 +75,10 @@ interface ApiSnapshot {
     shouldExecute: boolean;
     explanation: string[];
   };
+  risk?: ApiRisk;
+  receipts?: ApiReceipt[];
+  executionProof?: ApiExecutionProof;
+  decisionSteps?: ApiDecisionStep[];
   positions: Array<{
     pair: string;
     side: "LONG" | "FLAT";
@@ -43,89 +90,120 @@ interface ApiSnapshot {
     sizeUsd: number;
     quotedPrice: number;
     executionStatus: string;
+    txHash?: string;
   } | null;
-  auditTrail: string[];
 }
 
-function mapDirection(value: ApiSignal["action"] | ApiSnapshot["consensus"]["action"]) {
-  if (value === "BUY") {
-    return "LONG" as const;
-  }
-  if (value === "SELL") {
-    return "SHORT" as const;
-  }
+function mapDirection(value: "BUY" | "SELL" | "HOLD") {
+  if (value === "BUY") return "LONG" as const;
+  if (value === "SELL") return "SHORT" as const;
   return "NEUTRAL" as const;
 }
 
-function mapApiSnapshot(snapshot: ApiSnapshot): DashboardSnapshot {
-  const confidence = Math.max(0, Math.min(1, Math.abs(snapshot.consensus.finalScore)));
+function mapApiSnapshot(snap: ApiSnapshot): DashboardSnapshot {
+  const confidence = Math.max(0, Math.min(1, Math.abs(snap.consensus.finalScore)));
+
+  const riskGate: RiskGate | undefined = snap.risk
+    ? {
+        action: snap.risk.action,
+        maxPositionUsd: snap.risk.maxPositionUsd,
+        maxSlippageBps: snap.risk.maxSlippageBps,
+        flags: snap.risk.flags,
+        reason: snap.risk.reasons[0] ?? "",
+      }
+    : undefined;
+
+  const payments: PaymentRow[] | undefined = snap.receipts?.map((r) => ({
+    txId: r.id,
+    agentId: r.targetAgent,
+    agentName: AGENT_NAMES[r.targetAgent] ?? r.targetAgent,
+    amountUsd: r.amountUsd,
+    status: "settled" as const,
+    settledAt: r.createdAt,
+  }));
+
+  const executionProof: ExecutionProof | undefined = snap.executionProof
+    ? {
+        network: snap.executionProof.network,
+        status: snap.executionProof.status,
+        txHash: snap.executionProof.txHash,
+        explorerUrl: snap.executionProof.explorerUrl,
+        fillPrice: `$${snap.executionProof.fillPrice.toFixed(4)}`,
+        notionalUsd: `$${snap.executionProof.notionalUsd.toFixed(2)}`,
+        slippageBps: `${snap.executionProof.slippageBps.toFixed(1)} bps`,
+        executedAt: snap.executionProof.executedAt,
+      }
+    : undefined;
+
+  const decisionSteps: DecisionStep[] | undefined = snap.decisionSteps;
 
   return {
-    lastUpdated: snapshot.generatedAt,
+    lastUpdated: snap.generatedAt,
     market: {
-      symbol: snapshot.pair,
-      price: snapshot.market.price,
-      change24h: snapshot.market.changePct,
-      volume24h: snapshot.market.volume24h,
-      liquidity: snapshot.market.volatility24h > 0.06 ? "thin" : "deep",
+      symbol: snap.pair,
+      price: snap.market.price,
+      change24h: snap.market.changePct,
+      volume24h: snap.market.volume24h,
+      liquidity: snap.market.volatility24h > 0.06 ? "thin" : "deep",
     },
     consensus: {
-      direction: mapDirection(snapshot.consensus.action),
+      direction: mapDirection(snap.consensus.action),
       weightedConfidence: Number(confidence.toFixed(2)),
-      shouldExecute: snapshot.consensus.shouldExecute,
+      shouldExecute: snap.consensus.shouldExecute,
       riskLevel:
-        snapshot.market.volatility24h < 0.04
+        snap.market.volatility24h < 0.04
           ? "low"
-          : snapshot.market.volatility24h < 0.07
-            ? "guarded"
-            : "elevated",
-      reasoning: snapshot.consensus.explanation.join(" "),
+          : snap.market.volatility24h < 0.07
+          ? "guarded"
+          : "elevated",
+      reasoning: snap.consensus.explanation[0] ?? "",
     },
-    agents: snapshot.agents.map((agent, index) => ({
-      id: agent.agent,
-      name:
-        agent.agent === "technical"
-          ? "Technical"
-          : agent.agent === "whale"
-            ? "Whale Flow"
-            : agent.agent === "sentiment"
-              ? "Sentiment"
-              : "Risk",
-      role:
-        agent.agent === "technical"
-          ? "Trend and momentum"
-          : agent.agent === "whale"
+    agents: snap.agents
+      .filter((a) => a.agent !== "risk")
+      .map((agent, index) => ({
+        id: agent.agent,
+        name: AGENT_NAMES[agent.agent] ?? agent.agent,
+        role:
+          agent.agent === "technical"
+            ? "Trend and momentum"
+            : agent.agent === "whale"
             ? "Smart-money detection"
-            : agent.agent === "sentiment"
-              ? "Narrative and attention"
-              : "Portfolio guardrails",
-      direction: mapDirection(agent.action),
-      confidence: agent.confidence,
-      signal: agent.reasons[0] ?? "No signal rationale provided.",
-      reasoning: agent.reasons.join(" "),
-      paidWith: agent.payment.id,
-      latencyMs: 120 + index * 45,
-    })),
-    positions: snapshot.positions.map((position) => ({
-      symbol: position.pair,
-      side: position.side,
-      size: `$${position.exposureUsd.toFixed(0)}`,
-      pnl: `${position.pnlPct >= 0 ? "+" : ""}${position.pnlPct.toFixed(2)}%`,
-      status: position.side === "FLAT" ? "Watching" : "Open",
-      entry: snapshot.tradeIntent ? snapshot.tradeIntent.quotedPrice.toFixed(2) : "52.20",
-      stop: snapshot.tradeIntent ? (snapshot.tradeIntent.quotedPrice * 0.985).toFixed(2) : "51.40",
+            : "Narrative and attention",
+        direction: mapDirection(agent.action),
+        confidence: agent.confidence,
+        signal: agent.reasons[0] ?? "No signal rationale provided.",
+        reasoning: agent.reasons.slice(1, 4).join(" "),
+        paidWith: agent.payment.id,
+        latencyMs: 80 + index * 45,
+      })),
+    positions: snap.positions.map((p) => ({
+      symbol: p.pair,
+      side: p.side,
+      size: p.exposureUsd > 0 ? `$${p.exposureUsd.toFixed(0)}` : "$0",
+      pnl: `${p.pnlPct >= 0 ? "+" : ""}${p.pnlPct.toFixed(2)}%`,
+      status: p.side === "FLAT" ? "Watching" : "Open",
+      entry: snap.tradeIntent ? `$${snap.tradeIntent.quotedPrice.toFixed(4)}` : "N/A",
+      stop: snap.tradeIntent
+        ? `$${(snap.tradeIntent.quotedPrice * 0.985).toFixed(4)}`
+        : "N/A",
     })),
     trades: [
       {
-        time: new Date(snapshot.generatedAt).toISOString().slice(11, 16),
-        symbol: snapshot.pair,
-        action: snapshot.tradeIntent?.side ?? "WAIT",
-        size: snapshot.tradeIntent ? `$${snapshot.tradeIntent.sizeUsd.toFixed(0)}` : "$0",
-        result: snapshot.tradeIntent?.executionStatus ?? "blocked",
-        reason: snapshot.auditTrail.at(-1) ?? "Awaiting new round",
+        time: new Date(snap.generatedAt).toISOString().slice(11, 16),
+        symbol: snap.pair,
+        action: snap.tradeIntent?.side ?? "WAIT",
+        size: snap.tradeIntent ? `$${snap.tradeIntent.sizeUsd.toFixed(0)}` : "$0",
+        result: snap.tradeIntent?.executionStatus ?? "blocked",
+        reason: snap.consensus.explanation.at(-1) ?? "Awaiting new round",
       },
     ],
-    timeline: snapshot.agents.map((agent) => Math.round(agent.confidence * 100)),
+    timeline: snap.agents
+      .filter((a) => a.agent !== "risk")
+      .map((a) => Math.round(a.confidence * 100)),
+    riskGate,
+    payments,
+    executionProof,
+    decisionSteps,
   };
 }
 
@@ -136,7 +214,7 @@ export async function loadDashboardSnapshot(): Promise<DashboardSnapshot> {
       return mapApiSnapshot((await apiResponse.json()) as ApiSnapshot);
     }
   } catch {
-    // Fall back to the bundled static snapshot when the local API is not running.
+    // Fall back to static snapshot when orchestrator is not running.
   }
 
   const response = await fetch(MOCK_PATH, { cache: "no-store" });
@@ -146,38 +224,29 @@ export async function loadDashboardSnapshot(): Promise<DashboardSnapshot> {
   return (await response.json()) as DashboardSnapshot;
 }
 
-export function evolveSnapshot(snapshot: DashboardSnapshot, tick: number): DashboardSnapshot {
-  const drift = Math.sin(tick / 3) * 0.012 + Math.cos(tick / 7) * 0.006;
-  const price = Number((snapshot.market.price * (1 + drift)).toFixed(4));
-  const change24h = Number((snapshot.market.change24h + Math.sin(tick / 4) * 0.4).toFixed(2));
-  const confidenceNudge = Math.max(
-    0.5,
-    Math.min(0.98, snapshot.consensus.weightedConfidence + Math.sin(tick / 5) * 0.02)
-  );
+/** Re-fetch from API. Called periodically to get fresh real computations. */
+export async function refreshSnapshot(): Promise<DashboardSnapshot | null> {
+  try {
+    const apiResponse = await fetch(`${API_URL}/api/snapshot`, { cache: "no-store" });
+    if (apiResponse.ok) {
+      return mapApiSnapshot((await apiResponse.json()) as ApiSnapshot);
+    }
+  } catch {
+    // Orchestrator not running — keep existing snapshot.
+  }
+  return null;
+}
 
+/** Lightweight price drift for demo continuity between polls (price only, not agent logic). */
+export function driftPrice(snapshot: DashboardSnapshot, tick: number): DashboardSnapshot {
+  const drift = Math.sin(tick / 5) * 0.008 + Math.cos(tick / 9) * 0.003;
+  const price = Number((snapshot.market.price * (1 + drift)).toFixed(4));
+  const change24h = Number(
+    (snapshot.market.change24h + Math.sin(tick / 6) * 0.2).toFixed(2)
+  );
   return {
     ...snapshot,
     lastUpdated: new Date().toISOString(),
-    market: {
-      ...snapshot.market,
-      price,
-      change24h,
-    },
-    consensus: {
-      ...snapshot.consensus,
-      weightedConfidence: Number(confidenceNudge.toFixed(2)),
-      shouldExecute: confidenceNudge > 0.78,
-      riskLevel:
-        confidenceNudge > 0.9 ? "low" : confidenceNudge > 0.78 ? "guarded" : "elevated",
-    },
-    timeline: snapshot.timeline.map((value, index) =>
-      Math.max(24, Math.round(value + Math.sin((tick + index) / 4) * 5))
-    ),
-    agents: snapshot.agents.map((agent, index) => ({
-      ...agent,
-      confidence: Number(
-        Math.max(0.48, Math.min(0.98, agent.confidence + Math.sin((tick + index) / 6) * 0.02)).toFixed(2)
-      ),
-    })),
+    market: { ...snapshot.market, price, change24h },
   };
 }

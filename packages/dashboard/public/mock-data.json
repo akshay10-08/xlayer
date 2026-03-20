@@ -1,15 +1,15 @@
 {
-  "lastUpdated": "2026-03-19T08:40:00.000Z",
+  "lastUpdated": "2025-01-15T19:10:00.000Z",
   "market": {
-    "symbol": "XOKB/USDC",
-    "price": 0.8245,
-    "change24h": 7.42,
-    "volume24h": 18420000,
+    "symbol": "OKB/USDC",
+    "price": 0.84,
+    "change24h": 7.71,
+    "volume24h": 18400000,
     "liquidity": "deep"
   },
   "consensus": {
     "direction": "LONG",
-    "weightedConfidence": 0.83,
+    "weightedConfidence": 0.84,
     "shouldExecute": true,
     "riskLevel": "guarded",
     "reasoning": "Three specialist agents align on trend continuation while risk remains within slippage and exposure limits."
@@ -18,57 +18,46 @@
     {
       "id": "technical",
       "name": "Technical Agent",
-      "role": "Price action and indicator synthesis",
+      "role": "Trend and momentum",
       "direction": "LONG",
-      "confidence": 0.88,
+      "confidence": 0.89,
       "signal": "Breakout continuation",
       "reasoning": "Price reclaimed the 20 EMA, volatility expanded cleanly, and the current pullback held above the prior range high.",
-      "paidWith": "x402-0xtech-7f21",
+      "paidWith": "x402-0xtech-7121",
       "latencyMs": 82
     },
     {
       "id": "whale",
       "name": "Whale Flow Agent",
-      "role": "Large-wallet behavior and smart-money flow",
+      "role": "Smart-money detection",
       "direction": "LONG",
-      "confidence": 0.79,
+      "confidence": 0.80,
       "signal": "Accumulation detected",
       "reasoning": "Sustained inflows from tracked smart-money wallets suggest coordinated accumulation rather than noise.",
       "paidWith": "x402-0xwhale-a113",
-      "latencyMs": 104
+      "latencyMs": 127
     },
     {
       "id": "sentiment",
       "name": "Sentiment Agent",
-      "role": "Narrative and social momentum",
+      "role": "Narrative and attention",
       "direction": "NEUTRAL",
-      "confidence": 0.61,
+      "confidence": 0.62,
       "signal": "Narrative cooling",
       "reasoning": "Social chatter remains positive, but recent mentions are broadening instead of accelerating into a strong catalyst.",
       "paidWith": "x402-0xsent-2c9e",
       "latencyMs": 136
-    },
-    {
-      "id": "risk",
-      "name": "Risk Manager",
-      "role": "Exposure and execution safety",
-      "direction": "LONG",
-      "confidence": 0.91,
-      "signal": "Approved with guardrails",
-      "reasoning": "Position sizing stays below max exposure, simulated slippage is acceptable, and there is no concentration breach.",
-      "paidWith": "x402-0xrisk-5ad4",
-      "latencyMs": 67
     }
   ],
   "positions": [
     {
-      "symbol": "XOKB/USDC",
+      "symbol": "OKB/USDC",
       "side": "LONG",
       "size": "$18,400",
       "pnl": "+4.9%",
       "status": "Open",
-      "entry": "0.7812",
-      "stop": "0.7420"
+      "entry": "$0.8012",
+      "stop": "$0.7420"
     },
     {
       "symbol": "ETH/USDC",
@@ -83,7 +72,7 @@
   "trades": [
     {
       "time": "08:32",
-      "symbol": "XOKB/USDC",
+      "symbol": "OKB/USDC",
       "action": "BUY",
       "size": "$5,000",
       "result": "Queued",
@@ -96,28 +85,59 @@
       "size": "$0",
       "result": "Skipped",
       "reason": "Risk manager blocked the setup"
-    },
-    {
-      "time": "07:14",
-      "symbol": "XOKB/USDC",
-      "action": "BUY",
-      "size": "$3,500",
-      "result": "Filled",
-      "reason": "Momentum and flow matched"
     }
   ],
-  "timeline": [
-    48,
-    62,
-    58,
-    71,
-    67,
-    84,
-    79,
-    91,
-    88,
-    94,
-    90,
-    97
+  "timeline": [62, 71, 68, 74, 79, 84, 88, 85, 83, 86, 84, 87],
+  "riskGate": {
+    "action": "APPROVE",
+    "maxPositionUsd": 50,
+    "maxSlippageBps": 80,
+    "flags": [],
+    "reason": "Position sizing stays below max exposure, simulated slippage is acceptable, and there is no concentration breach."
+  },
+  "payments": [
+    {
+      "txId": "x402-0xtech-7121-settle",
+      "agentId": "technical",
+      "agentName": "Technical Agent",
+      "amountUsd": 1.0,
+      "status": "settled",
+      "settledAt": "2025-01-15T19:09:45.000Z"
+    },
+    {
+      "txId": "x402-0xwhale-a113-settle",
+      "agentId": "whale",
+      "agentName": "Whale Flow Agent",
+      "amountUsd": 1.5,
+      "status": "settled",
+      "settledAt": "2025-01-15T19:09:46.000Z"
+    },
+    {
+      "txId": "x402-0xsent-2c9e-settle",
+      "agentId": "sentiment",
+      "agentName": "Sentiment Agent",
+      "amountUsd": 0.75,
+      "status": "settled",
+      "settledAt": "2025-01-15T19:09:47.000Z"
+    }
+  ],
+  "executionProof": {
+    "network": "X Layer Testnet",
+    "status": "SIMULATED",
+    "txHash": "0x512558071000000000000000000000000000000000000000000000000000000000",
+    "explorerUrl": "https://www.oklink.com/xlayer-test/tx/0x512558071000000000000000000000000000000000000000000000000000000000",
+    "fillPrice": "$0.8401",
+    "notionalUsd": "$30.00",
+    "slippageBps": "28.5 bps",
+    "executedAt": "2025-01-15T19:10:00.000Z"
+  },
+  "decisionSteps": [
+    { "label": "Market context loaded", "status": "done", "detail": "OKB/USDC @ $0.8400 — 48 candles, 15m timeframe" },
+    { "label": "x402 payments dispatched", "status": "done", "detail": "Coordinator paid 3 agents — $3.25 USDC total" },
+    { "label": "Agent signals computed", "status": "done", "detail": "Technical: LONG (89%) · Whale: LONG (80%) · Sentiment: NEUTRAL (62%)" },
+    { "label": "Coordinator consensus", "status": "done", "detail": "LONG — 84% confidence — 2/3 aligned" },
+    { "label": "Risk gate evaluation", "status": "done", "detail": "APPROVED — max $50, slippage cap 80 bps" },
+    { "label": "Trade simulation", "status": "done", "detail": "Fill @ $0.8401 — slippage 28.5 bps" },
+    { "label": "On-chain submission", "status": "done", "detail": "SIMULATED — tx: 0x5125580710000..." }
   ]
 }

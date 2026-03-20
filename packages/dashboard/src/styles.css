@@ -464,3 +464,285 @@ select {
     grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 }
+
+/* ── New panel styles ─────────────────────────── */
+
+.run-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 20px;
+  padding: 12px 22px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(255, 159, 90, 0.15);
+  color: #ffb97a;
+  font-weight: 700;
+  font-size: 0.88rem;
+  letter-spacing: 0.06em;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.run-btn:hover:not(:disabled) {
+  background: rgba(255, 159, 90, 0.28);
+  border-color: rgba(255, 159, 90, 0.4);
+}
+
+.run-btn:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+
+.last-updated {
+  display: inline-block;
+  margin-left: 14px;
+  font-size: 0.76rem;
+  color: rgba(220, 230, 245, 0.46);
+  vertical-align: middle;
+}
+
+.x402-badge {
+  font-size: 0.76rem;
+  font-weight: 700;
+  color: #7cdfb6;
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: rgba(102, 230, 180, 0.1);
+  border: 1px solid rgba(102, 230, 180, 0.2);
+  letter-spacing: 0.06em;
+}
+
+.network-badge {
+  font-size: 0.76rem;
+  font-weight: 700;
+  color: #87b4ff;
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: rgba(100, 160, 255, 0.1);
+  border: 1px solid rgba(100, 160, 255, 0.2);
+}
+
+.payment-tag {
+  font-family: monospace;
+  font-size: 0.72rem;
+  color: rgba(220, 230, 245, 0.55);
+}
+
+.bottom-strip {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 24px;
+  margin-top: 24px;
+}
+
+/* Risk Gate */
+.risk-gate-panel {
+  padding: 24px;
+  border-left: 3px solid rgba(255, 255, 255, 0.1);
+}
+
+.gate-approve { border-left-color: #6cffbf; }
+.gate-block   { border-left-color: #ff8c97; }
+
+.gate-verdict {
+  font-size: 0.9rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  padding: 10px 16px;
+  border-radius: 999px;
+}
+
+.verdict-approve {
+  color: #6cffbf;
+  background: rgba(102, 255, 190, 0.1);
+  border: 1px solid rgba(102, 255, 190, 0.25);
+}
+
+.verdict-block {
+  color: #ff8c97;
+  background: rgba(255, 105, 120, 0.12);
+  border: 1px solid rgba(255, 105, 120, 0.28);
+}
+
+.gate-reason {
+  margin: 14px 0;
+  color: rgba(234, 239, 247, 0.84);
+}
+
+.gate-stats {
+  display: flex;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.gate-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.gate-stat span {
+  font-size: 0.76rem;
+  color: rgba(220, 230, 245, 0.56);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+.gate-stat strong {
+  font-size: 1.05rem;
+}
+
+.gate-flags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.gate-flag {
+  padding: 5px 10px;
+  border-radius: 999px;
+  background: rgba(255, 140, 151, 0.1);
+  border: 1px solid rgba(255, 140, 151, 0.2);
+  color: #ff8c97;
+  font-size: 0.74rem;
+  font-weight: 600;
+}
+
+/* x402 Payment Log */
+.payments-panel { padding: 24px; }
+
+.payment-log {
+  display: grid;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+.payment-row {
+  display: grid;
+  grid-template-columns: 1.5fr 1fr 1.4fr;
+  gap: 12px;
+  align-items: center;
+  padding: 14px 16px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.035);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.payment-agent strong { font-size: 0.9rem; }
+.payment-agent span  { display: block; font-size: 0.74rem; color: rgba(215,225,240,0.55); margin-top: 3px; }
+
+.payment-amount strong { font-size: 0.9rem; color: #6cffbf; }
+.payment-amount { display: flex; flex-direction: column; gap: 3px; }
+
+.payment-status { font-size: 0.74rem; color: rgba(108, 255, 190, 0.65); }
+
+.payment-tx code { display: block; font-size: 0.74rem; color: rgba(200, 215, 240, 0.6); }
+.payment-tx span { font-size: 0.72rem; color: rgba(200, 215, 240, 0.38); margin-top: 3px; display: block; }
+
+/* Decision Flow */
+.decision-flow-panel { padding: 24px; }
+
+.step-list {
+  list-style: none;
+  padding: 0;
+  margin: 4px 0 0;
+  display: grid;
+  gap: 0;
+}
+
+.step-item {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+  padding: 14px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.step-item:last-child { border-bottom: none; }
+
+.step-icon {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-size: 0.78rem;
+  font-weight: 700;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.step-done    { background: rgba(108, 255, 190, 0.12); color: #6cffbf; border: 1px solid rgba(108, 255, 190, 0.3); }
+.step-skipped { background: rgba(255, 255, 255, 0.05); color: rgba(200, 215, 240, 0.4); border: 1px solid rgba(255, 255, 255, 0.08); }
+.step-blocked { background: rgba(255, 140, 151, 0.12); color: #ff8c97; border: 1px solid rgba(255, 140, 151, 0.3); }
+
+.step-body strong { font-size: 0.9rem; }
+.step-body p { margin: 4px 0 0; font-size: 0.78rem; color: rgba(215, 225, 240, 0.6); }
+
+/* Execution Proof */
+.proof-panel { padding: 24px; }
+
+.proof-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+  margin: 14px 0;
+}
+
+.proof-stat {
+  padding: 14px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.proof-stat span { font-size: 0.74rem; color: rgba(215, 225, 240, 0.55); text-transform: uppercase; letter-spacing: 0.1em; display: block; }
+.proof-stat strong { display: block; margin-top: 6px; font-size: 1.0rem; }
+
+.proof-tx {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+  padding: 14px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  margin-top: 8px;
+}
+
+.proof-tx > span { font-size: 0.76rem; color: rgba(215, 225, 240, 0.5); }
+
+.tx-hash {
+  font-size: 0.8rem;
+  color: rgba(200, 215, 240, 0.75);
+  background: rgba(255, 255, 255, 0.05);
+  padding: 4px 10px;
+  border-radius: 8px;
+  flex: 1;
+}
+
+.explorer-link {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #87b4ff;
+  text-decoration: none;
+  padding: 6px 12px;
+  border-radius: 8px;
+  border: 1px solid rgba(100, 160, 255, 0.22);
+  background: rgba(100, 160, 255, 0.08);
+  transition: background 0.15s;
+}
+
+.explorer-link:hover { background: rgba(100, 160, 255, 0.18); }
+
+@media (max-width: 1120px) {
+  .bottom-strip {
+    grid-template-columns: 1fr;
+  }
+  .payment-row {
+    grid-template-columns: 1fr 1fr;
+  }
+}
