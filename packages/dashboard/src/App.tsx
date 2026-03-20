@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { DashboardSnapshot } from "./types";
 import { loadDashboardSnapshot, refreshSnapshot, driftPrice } from "./lib/mockApi";
+import WalletButton from "./components/WalletButton";
 
 function formatCurrency(value: number) {
   return new Intl.NumberFormat("en-US", {
@@ -116,7 +117,10 @@ export default function App() {
       {/* ── Hero ─────────────────────────────────────────── */}
       <header className="hero panel">
         <div className="hero-copy">
-          <p className="eyebrow">Signal Swarm / X Layer</p>
+          <div className="hero-top-row">
+            <p className="eyebrow">Signal Swarm / X Layer</p>
+            <WalletButton />
+          </div>
           <h1>Multi-agent trading intelligence with paid signal exchange.</h1>
           <p className="lede">
             Specialist agents price their own views via x402 micropayments, the coordinator
