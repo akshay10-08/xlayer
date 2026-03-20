@@ -11,12 +11,14 @@
     "dev": "tsx packages/agents/src/cli.ts",
     "dev:dashboard": "npm run dev --workspace signal-swarm-dashboard",
     "dev:orchestrator": "npm run dev --workspace @signal-swarm/orchestrator",
+    "test": "npm run test --workspace @signal-swarm/shared && npm run test --workspace @signal-swarm/agents && npm run test --workspace @signal-swarm/orchestrator",
     "typecheck": "tsc -b --force --pretty false",
     "preview:dashboard": "npm run preview --workspace signal-swarm-dashboard"
   },
   "devDependencies": {
     "@types/node": "^22.15.3",
     "tsx": "^4.20.5",
-    "typescript": "^5.8.3"
+    "typescript": "^5.8.3",
+    "vitest": "^4.1.0"
   }
 }
