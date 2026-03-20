@@ -33,6 +33,9 @@ export function computeRsi(values: number[], period = 14) {
     }
   }
 
+  gains /= period;
+  losses /= period;
+
   for (let index = period + 1; index < values.length; index += 1) {
     const delta = values[index]! - values[index - 1]!;
     const gain = Math.max(delta, 0);
