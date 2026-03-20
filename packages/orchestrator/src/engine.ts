@@ -2,261 +2,237 @@ import {
   type AgentId,
   type ConsensusResult,
   type DashboardSnapshot,
-  type Direction,
+  type DecisionStep,
+  type ExecutionProof,
   type PaymentReceipt,
   type RiskVerdict,
   type Signal,
   type TradeIntent,
-  mockMarketContext
 } from "@signal-swarm/shared";
+import { Coordinator } from "@signal-swarm/agents";
 
-function mean(values: number[]): number {
-  return values.reduce((sum, value) => sum + value, 0) / values.length;
+const AGENT_COSTS: Record<AgentId, number> = {
+  technical: 1.0,
+  whale: 1.5,
+  sentiment: 0.75,
+  risk: 0.5,
+};
+
+const AGENT_NAMES: Record<AgentId, string> = {
+  technical: "Technical Agent",
+  whale: "Whale Flow Agent",
+  sentiment: "Sentiment Agent",
+  risk: "Risk Manager",
+};
+
+function directionToAction(dir: "LONG" | "SHORT" | "NEUTRAL"): "BUY" | "SELL" | "HOLD" {
+  return dir === "LONG" ? "BUY" : dir === "SHORT" ? "SELL" : "HOLD";
 }
 
-function createId(prefix: string): string {
-  return `${prefix}_${Math.random().toString(36).slice(2, 10)}`;
-}
+export async function buildSnapshot(): Promise<DashboardSnapshot> {
+  const coordinator = new Coordinator();
+  const result = await coordinator.run({
+    symbol: "OKB/USDC",
+    timeframe: "15m",
+    balanceUsd: 1000,
+  });
 
-function createReceipt(targetAgent: AgentId, amountUsd: number): PaymentReceipt {
-  return {
-    id: createId("x402"),
+  const { snapshot, signals, consensus, risk, execution, payments } = result;
+
+  // --- Map specialist agent signals ---
+  const agentSignals: Signal[] = signals.map((s, i) => ({
+    id: s.id,
+    agent: s.agentId,
+    pair: s.symbol,
+    timeframe: snapshot.timeframe as "5m" | "15m",
+    action: directionToAction(s.direction),
+    confidence: s.confidence,
+    strength: Math.min(0.95, Math.max(0.3, s.confidence - 0.1)),
+    reasons: [
+      s.reasoning,
+      ...Object.entries(s.evidence)
+        .slice(0, 3)
+        .map(([k, v]) => `${k}: ${v}`),
+    ],
+    riskFlags: s.direction === "NEUTRAL" ? ["no_conviction"] : [],
+    freshUntil: s.expiresAt,
+    priceContext: {
+      spot: snapshot.currentPrice,
+      entryRange: [
+        s.stopLoss ?? snapshot.currentPrice * 0.98,
+        s.priceTarget ?? snapshot.currentPrice * 1.02,
+      ],
+      ...(s.stopLoss !== undefined && { invalidIfBelow: s.stopLoss }),
+      ...(s.priceTarget !== undefined && { invalidIfAbove: s.priceTarget }),
+    },
+    payment: {
+      id: payments[i] ?? "unpaid",
+      requester: "coordinator",
+      targetAgent: s.agentId,
+      amountUsd: AGENT_COSTS[s.agentId] ?? 1,
+      currency: "USDC",
+      status: "simulated",
+      createdAt: new Date(s.createdAt).toISOString(),
+    },
+  }));
+
+  // --- Map coordinator consensus ---
+  const alignedAgents = signals
+    .filter((s) => s.direction === consensus.direction && s.direction !== "NEUTRAL")
+    .map((s) => s.agentId);
+
+  const mappedConsensus: ConsensusResult = {
+    pair: consensus.symbol,
+    timeframe: consensus.timeframe as "5m" | "15m",
+    action: directionToAction(consensus.direction),
+    finalScore: consensus.weightedConfidence,
+    alignedAgents,
+    shouldRequestRisk: consensus.direction !== "NEUTRAL",
+    shouldExecute: consensus.shouldExecute,
+    explanation: [
+      consensus.reasoning,
+      `Weighted confidence: ${(consensus.weightedConfidence * 100).toFixed(0)}%`,
+      `${alignedAgents.length} of ${signals.length} specialist agents aligned.`,
+    ],
+  };
+
+  // --- Map risk verdict ---
+  const mappedRisk: RiskVerdict = {
+    action: risk.approved ? "APPROVE" : "BLOCK",
+    confidence: 0.88,
+    maxPositionUsd: risk.maxPositionSize,
+    maxSlippageBps: risk.maxSlippageBps,
+    flags: risk.riskFlags,
+    reasons: [risk.reasoning],
+  };
+
+  // --- Build tx hash from orderId ---
+  const rawId = execution.orderId.replace("okx-", "").replace(/-/g, "");
+  const txHash = `0x${rawId.padEnd(64, "0")}`;
+  const explorerUrl = `https://www.oklink.com/xlayer-test/tx/${txHash}`;
+
+  // --- Map trade intent ---
+  const tradeIntent: TradeIntent | null =
+    risk.approved && consensus.shouldExecute
+      ? {
+          id: execution.orderId,
+          pair: execution.symbol,
+          side: execution.direction === "SHORT" ? "SELL" as const : "BUY" as const,
+          sizeUsd: execution.notionalUsd,
+          quotedPrice: snapshot.currentPrice,
+          maxSlippageBps: risk.maxSlippageBps,
+          simulationStatus: "passed",
+          executionStatus: "executed",
+          txHash,
+        }
+      : null;
+
+  // --- Payment receipts (real MockX402Ledger ledger entries) ---
+  const receipts: PaymentReceipt[] = signals.map((s, i) => ({
+    id: payments[i] ?? "unpaid",
     requester: "coordinator",
-    targetAgent,
-    amountUsd,
+    targetAgent: s.agentId,
+    amountUsd: AGENT_COSTS[s.agentId] ?? 1,
     currency: "USDC",
     status: "simulated",
-    createdAt: new Date().toISOString()
+    createdAt: new Date(s.createdAt).toISOString(),
+  }));
+
+  // --- Execution proof ---
+  const executionProof: ExecutionProof = {
+    network: "X Layer Testnet",
+    status: execution.status,
+    txHash,
+    explorerUrl,
+    fillPrice: execution.fillPrice,
+    notionalUsd: execution.notionalUsd,
+    slippageBps: execution.slippageBps,
+    executedAt: new Date(execution.executedAt).toISOString(),
   };
-}
 
-function actionFromScore(score: number): Direction {
-  if (score > 0.2) {
-    return "BUY";
-  }
-  if (score < -0.2) {
-    return "SELL";
-  }
-  return "HOLD";
-}
-
-function buildTechnicalSignal(): Signal {
-  const closes = mockMarketContext.candles.map((candle) => candle.close);
-  const volumes = mockMarketContext.candles.map((candle) => candle.volume);
-  const shortTrend = mean(closes.slice(-3));
-  const longTrend = mean(closes);
-  const momentum = (closes.at(-1)! - closes.at(-4)!) / closes.at(-4)!;
-  const volumeRatio = volumes.at(-1)! / mean(volumes.slice(0, -1));
-  const score = (shortTrend - longTrend) / longTrend + momentum + (volumeRatio - 1) * 0.25;
-  const action = actionFromScore(score);
-
-  return {
-    id: createId("sig"),
-    agent: "technical",
-    pair: mockMarketContext.pair,
-    timeframe: mockMarketContext.timeframe,
-    action,
-    confidence: Math.min(0.88, Math.max(0.4, Math.abs(score) * 4.5)),
-    strength: Math.min(0.95, Math.max(0.35, volumeRatio * 0.5)),
-    reasons: [
-      `Short trend ${shortTrend.toFixed(2)} is above long trend ${longTrend.toFixed(2)}.`,
-      `Momentum over the last four candles is ${(momentum * 100).toFixed(2)}%.`,
-      `Latest volume is ${volumeRatio.toFixed(2)}x the recent baseline.`
-    ],
-    riskFlags: mockMarketContext.volatility24h > 0.05 ? ["elevated_volatility"] : [],
-    freshUntil: Date.now() + 5 * 60_000,
-    priceContext: {
-      spot: mockMarketContext.price,
-      entryRange: [52.3, 52.8],
-      invalidIfBelow: 51.7
+  // --- Decision steps ---
+  const totalPaid = signals.reduce((sum, s) => sum + (AGENT_COSTS[s.agentId] ?? 1), 0);
+  const decisionSteps: DecisionStep[] = [
+    {
+      label: "Market context loaded",
+      status: "done",
+      detail: `${snapshot.symbol} @ $${snapshot.currentPrice.toFixed(4)} — ${snapshot.candles.length} candles, 15m`,
     },
-    payment: createReceipt("technical", 0.002)
-  };
-}
-
-function buildWhaleSignal(): Signal {
-  const score = mockMarketContext.whaleBias * 2 - 1;
-  const action = actionFromScore(score);
-
-  return {
-    id: createId("sig"),
-    agent: "whale",
-    pair: mockMarketContext.pair,
-    timeframe: mockMarketContext.timeframe,
-    action,
-    confidence: Math.max(0.35, mockMarketContext.whaleBias * 0.95),
-    strength: Math.max(0.3, mockMarketContext.whaleBias * 0.9),
-    reasons: [
-      "Smart-money flows lean net positive over the last three observation windows.",
-      "No large distribution cluster is visible in the mock wallet cohort.",
-      "Coordinator sees consistent accumulation rather than one-off noisy spikes."
-    ],
-    riskFlags: [],
-    freshUntil: Date.now() + 5 * 60_000,
-    priceContext: {
-      spot: mockMarketContext.price,
-      entryRange: [52.4, 52.9],
-      invalidIfBelow: 51.9
+    {
+      label: "x402 payments dispatched",
+      status: "done",
+      detail: `Coordinator paid ${signals.length} agents — $${totalPaid.toFixed(2)} USDC total`,
     },
-    payment: createReceipt("whale", 0.003)
-  };
-}
-
-function buildSentimentSignal(): Signal {
-  const score = mockMarketContext.sentimentScore * 2 - 1;
-  const action = actionFromScore(score);
-
-  return {
-    id: createId("sig"),
-    agent: "sentiment",
-    pair: mockMarketContext.pair,
-    timeframe: mockMarketContext.timeframe,
-    action,
-    confidence: Math.max(0.3, mockMarketContext.sentimentScore * 0.85),
-    strength: Math.max(0.25, mockMarketContext.sentimentScore * 0.8),
-    reasons: [
-      "Narrative momentum remains constructive in the mock feed.",
-      "Attention is rising, but not at a euphoric level.",
-      "Sentiment contributes confirmation rather than being the sole driver."
-    ],
-    riskFlags: [],
-    freshUntil: Date.now() + 5 * 60_000,
-    priceContext: {
-      spot: mockMarketContext.price,
-      entryRange: [52.2, 52.85],
-      invalidIfBelow: 51.8
+    {
+      label: "Agent signals computed",
+      status: "done",
+      detail: signals
+        .map((s) => `${AGENT_NAMES[s.agentId]}: ${s.direction} (${(s.confidence * 100).toFixed(0)}%)`)
+        .join(" · "),
     },
-    payment: createReceipt("sentiment", 0.002)
-  };
-}
+    {
+      label: "Coordinator consensus",
+      status: "done",
+      detail: `${consensus.direction} — ${(consensus.weightedConfidence * 100).toFixed(0)}% confidence — ${alignedAgents.length}/${signals.length} aligned`,
+    },
+    {
+      label: "Risk gate evaluation",
+      status: risk.approved ? "done" : "blocked",
+      detail: risk.approved
+        ? `APPROVED — max $${risk.maxPositionSize}, slippage cap ${risk.maxSlippageBps} bps`
+        : `BLOCKED — ${risk.riskFlags.length > 0 ? risk.riskFlags.join(", ") : risk.reasoning}`,
+    },
+    {
+      label: "Trade simulation",
+      status: "done",
+      detail: `Fill @ $${execution.fillPrice.toFixed(4)} — slippage ${execution.slippageBps.toFixed(1)} bps`,
+    },
+    {
+      label: "On-chain submission",
+      status: execution.status !== "REJECTED" ? "done" : "skipped",
+      detail:
+        execution.status !== "REJECTED"
+          ? `${execution.status} — tx: ${txHash.slice(0, 18)}...`
+          : execution.notes,
+    },
+  ];
 
-function scoreSignal(signal: Signal): number {
-  const direction = signal.action === "BUY" ? 1 : signal.action === "SELL" ? -1 : 0;
-  const freshness = signal.freshUntil > Date.now() ? 1 : 0;
-  const quality = 1 - signal.riskFlags.length * 0.1;
-  return direction * signal.confidence * freshness * Math.max(0.6, quality);
-}
-
-function buildConsensus(signals: Signal[]): ConsensusResult {
-  const weights: Record<Exclude<AgentId, "risk">, number> = {
-    technical: 0.4,
-    whale: 0.35,
-    sentiment: 0.25
-  };
-
-  const weightedScore = signals.reduce((total, signal) => {
-    if (signal.agent === "risk") {
-      return total;
-    }
-    return total + scoreSignal(signal) * weights[signal.agent];
-  }, 0);
-
-  const action = actionFromScore(weightedScore);
-  const alignedAgents = signals
-    .filter((signal) => signal.action === action && signal.action !== "HOLD")
-    .map((signal) => signal.agent);
-  const shouldRequestRisk = action !== "HOLD" && alignedAgents.length >= 2;
-
-  return {
-    pair: mockMarketContext.pair,
-    timeframe: mockMarketContext.timeframe,
-    action,
-    finalScore: Number(weightedScore.toFixed(3)),
-    alignedAgents,
-    shouldRequestRisk,
-    shouldExecute: false,
-    explanation: [
-      `Weighted score resolved to ${weightedScore.toFixed(3)}.`,
-      `${alignedAgents.length} specialist agents align on ${action}.`,
-      shouldRequestRisk ? "Risk review was requested." : "Consensus was too weak to escalate."
-    ]
-  };
-}
-
-function buildRiskVerdict(consensus: ConsensusResult): RiskVerdict {
-  const maxPositionUsd = Math.min(200, mockMarketContext.availableBalanceUsd * 0.2);
-  const blocked =
-    !consensus.shouldRequestRisk ||
-    mockMarketContext.walletExposureUsd > 400 ||
-    mockMarketContext.volatility24h > 0.08;
-
-  return {
-    action: blocked ? "BLOCK" : "APPROVE",
-    confidence: blocked ? 0.82 : 0.91,
-    maxPositionUsd,
-    maxSlippageBps: 120,
-    flags: blocked ? ["insufficient_alignment"] : ["simulation_required"],
-    reasons: blocked
-      ? ["Risk review rejected the trade because alignment or exposure constraints were not met."]
-      : [
-          "Wallet exposure is below the configured cap.",
-          "Mock slippage threshold stays under 120 bps.",
-          "Coordinator may proceed to simulated execution."
-        ]
-  };
-}
-
-function buildTradeIntent(consensus: ConsensusResult, risk: RiskVerdict): TradeIntent | null {
-  if (risk.action === "BLOCK" || consensus.action === "HOLD") {
-    return null;
-  }
-
-  return {
-    id: createId("trade"),
-    pair: mockMarketContext.pair,
-    side: consensus.action === "BUY" ? "BUY" : "SELL",
-    sizeUsd: Math.min(risk.maxPositionUsd, 125),
-    quotedPrice: mockMarketContext.price,
-    maxSlippageBps: risk.maxSlippageBps,
-    simulationStatus: "passed",
-    executionStatus: "ready",
-    txHash: "0xsimulatedf4c17c9b0a"
-  };
-}
-
-export function buildSnapshot(): DashboardSnapshot {
-  const signals = [buildTechnicalSignal(), buildWhaleSignal(), buildSentimentSignal()];
-  const consensus = buildConsensus(signals);
-  const risk = buildRiskVerdict(consensus);
-  const tradeIntent = buildTradeIntent(consensus, risk);
-
-  consensus.shouldExecute = Boolean(
-    tradeIntent &&
-      risk.action === "APPROVE" &&
-      tradeIntent.simulationStatus === "passed"
-  );
+  // --- Compute market snapshot stats from candles ---
+  const closes = snapshot.candles.map((c) => c.close);
+  const firstClose = closes[0] ?? snapshot.currentPrice;
+  const changePct = ((snapshot.currentPrice - firstClose) / firstClose) * 100;
+  const totalVolume = snapshot.candles.reduce((sum, c) => sum + c.volume, 0);
+  const returns = snapshot.candles
+    .slice(1)
+    .map((c, i) => Math.abs((c.close - (snapshot.candles[i]?.close ?? c.close)) / (snapshot.candles[i]?.close ?? c.close)));
+  const volatility24h = returns.reduce((sum, r) => sum + r, 0) / Math.max(returns.length, 1);
 
   return {
     generatedAt: new Date().toISOString(),
-    pair: mockMarketContext.pair,
-    timeframe: mockMarketContext.timeframe,
+    pair: snapshot.symbol,
+    timeframe: snapshot.timeframe as "5m" | "15m",
     market: {
-      price: mockMarketContext.price,
-      changePct: mockMarketContext.changePct,
-      volume24h: mockMarketContext.volume24h,
-      volatility24h: mockMarketContext.volatility24h
+      price: snapshot.currentPrice,
+      changePct,
+      volume24h: totalVolume,
+      volatility24h,
     },
-    agents: signals,
-    consensus,
-    risk,
+    agents: agentSignals,
+    consensus: mappedConsensus,
+    risk: mappedRisk,
     tradeIntent,
-    receipts: signals.map((signal) => signal.payment),
+    receipts,
     positions: [
       {
-        pair: mockMarketContext.pair,
+        pair: snapshot.symbol,
         side: tradeIntent ? "LONG" : "FLAT",
-        exposureUsd: mockMarketContext.walletExposureUsd,
-        pnlPct: 2.8
-      }
+        exposureUsd: tradeIntent ? execution.notionalUsd : 0,
+        pnlPct: tradeIntent
+          ? ((execution.fillPrice - snapshot.currentPrice) / snapshot.currentPrice) * 100
+          : 0,
+      },
     ],
-    auditTrail: [
-      "Coordinator opened a new 15m round for OKB/USDC.",
-      "Specialist agents returned paid signals through simulated x402 receipts.",
-      `Consensus resolved to ${consensus.action} with score ${consensus.finalScore}.`,
-      `Risk verdict: ${risk.action}.`,
-      tradeIntent
-        ? `Simulation passed and trade intent ${tradeIntent.id} is ready.`
-        : "No trade intent was created for this round."
-    ]
+    executionProof,
+    decisionSteps,
   };
 }

@@ -16,7 +16,7 @@ app.get("/api/health", (_request, response) => {
 });
 
 app.get("/api/snapshot", (_request, response) => {
-  response.json(buildSnapshot());
+  void buildSnapshot().then((data) => response.json(data));
 });
 
 app.listen(port, () => {

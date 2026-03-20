@@ -47,6 +47,40 @@ export interface TradeRow {
   reason: string;
 }
 
+export interface RiskGate {
+  action: "APPROVE" | "BLOCK";
+  maxPositionUsd: number;
+  maxSlippageBps: number;
+  flags: string[];
+  reason: string;
+}
+
+export interface PaymentRow {
+  txId: string;
+  agentId: string;
+  agentName: string;
+  amountUsd: number;
+  status: "settled";
+  settledAt: string;
+}
+
+export interface ExecutionProof {
+  network: string;
+  status: string;
+  txHash: string;
+  explorerUrl: string;
+  fillPrice: string;
+  notionalUsd: string;
+  slippageBps: string;
+  executedAt: string;
+}
+
+export interface DecisionStep {
+  label: string;
+  status: "done" | "skipped" | "blocked";
+  detail: string;
+}
+
 export interface DashboardSnapshot {
   lastUpdated: string;
   market: MarketSnapshot;
@@ -55,4 +89,8 @@ export interface DashboardSnapshot {
   positions: PositionRow[];
   trades: TradeRow[];
   timeline: number[];
+  riskGate?: RiskGate;
+  payments?: PaymentRow[];
+  executionProof?: ExecutionProof;
+  decisionSteps?: DecisionStep[];
 }
