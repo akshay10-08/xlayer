@@ -1,6 +1,6 @@
 import type { ConsensusResult, MarketSnapshot, RoundResult, Signal } from "../../shared/src/types.js";
 import { MockX402Ledger } from "../../shared/src/mock-x402.js";
-import { getMarketSnapshot, simulateTrade } from "../../shared/src/mock-okx.js";
+import { getMarketSnapshotLive, simulateTradeLive } from "../../shared/src/live-okx.js";
 import { roundTo } from "../../shared/src/deterministic.js";
 import { SentimentAgent } from "./sentiment-agent.js";
 import { TechnicalAgent } from "./technical-agent.js";
@@ -25,9 +25,9 @@ export class Coordinator {
   async run(options: CoordinatorOptions = {}): Promise<RoundResult> {
     this.ledger.credit("coordinator", 100);
 
-    const symbol = options.symbol ?? "ETH/USDC";
+    const symbol = options.symbol ?? "OKB/USDC"; // Default to native XLayer token for live data
     const timeframe = options.timeframe ?? "15m";
-    const snapshot = getMarketSnapshot(symbol, timeframe);
+    const snapshot = getMarketSnapshotLive(symbol, timeframe);
     const signals = [
       await this.technical.analyze(snapshot),
       await this.whale.analyze(snapshot),
@@ -38,7 +38,7 @@ export class Coordinator {
     const requestedNotionalUsd = options.requestedNotionalUsd ?? Math.max(25, (options.balanceUsd ?? 250) * 0.12);
     const maxPortfolioExposureUsd = options.maxPortfolioExposureUsd ?? (options.balanceUsd ?? 250) * 0.28;
     const simulatedDirection = consensus.direction === "SHORT" ? "SHORT" : "LONG";
-    const simulatedExecution = simulateTrade({
+    const simulatedExecution = simulateTradeLive({
       symbol,
       direction: simulatedDirection,
       positionSizeUsd: requestedNotionalUsd,
