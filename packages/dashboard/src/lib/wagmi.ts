@@ -63,7 +63,7 @@ export const xlayerTestnet = defineChain({
 // WalletConnect project ID — get a free one at https://cloud.walletconnect.com
 // Falls back gracefully for injected wallets (MetaMask, etc.) if not provided.
 const WC_PROJECT_ID =
-  (import.meta.env.VITE_WC_PROJECT_ID as string | undefined) ?? "signal-swarm-demo";
+  (import.meta.env.VITE_WALLETCONNECT_PROJECT_ID as string | undefined) ?? "signal-swarm-demo";
 
 export const wagmiConfig = getDefaultConfig({
   appName: "Signal Swarm",

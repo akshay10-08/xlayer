@@ -7,9 +7,9 @@
   font-weight: 400;
   color: rgba(245, 247, 250, 0.96);
   background:
-    radial-gradient(circle at top left, rgba(255, 122, 89, 0.24), transparent 28%),
-    radial-gradient(circle at 80% 18%, rgba(99, 140, 255, 0.2), transparent 24%),
-    linear-gradient(135deg, #08111e 0%, #0c1526 45%, #05080e 100%);
+    radial-gradient(circle at top left, rgba(0, 230, 118, 0.15), transparent 28%),
+    radial-gradient(circle at 80% 18%, rgba(0, 230, 118, 0.08), transparent 24%),
+    linear-gradient(135deg, #05080e 0%, #030408 45%, #05080e 100%);
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
@@ -63,7 +63,7 @@ select {
   right: 2rem;
   width: 18rem;
   height: 18rem;
-  background: rgba(255, 159, 90, 0.18);
+  background: rgba(0, 230, 118, 0.15);
 }
 
 .ambient-two {
@@ -71,7 +71,7 @@ select {
   bottom: 1rem;
   width: 22rem;
   height: 22rem;
-  background: rgba(74, 118, 255, 0.16);
+  background: rgba(0, 230, 118, 0.08);
 }
 
 .panel {
@@ -89,8 +89,18 @@ select {
   display: grid;
   grid-template-columns: minmax(0, 1.4fr) minmax(300px, 0.9fr);
   gap: 24px;
-  padding: 28px;
+  padding: 42px;
   margin-bottom: 24px;
+  background-color: #030508;
+  background-image: 
+    linear-gradient(to right, #030508 30%, rgba(3, 5, 8, 0.5) 65%, transparent 100%),
+    url('/hero-mesh.png');
+  background-size: 100% 100%, 65% auto;
+  background-position: left top, right center;
+  background-repeat: no-repeat, no-repeat;
+  border-radius: 28px;
+  overflow: hidden;
+  position: relative;
 }
 
 .hero h1,
@@ -103,8 +113,10 @@ select {
 
 .hero h1 {
   font-size: clamp(2.4rem, 5vw, 4.7rem);
-  line-height: 0.95;
+  line-height: 1.05;
+  letter-spacing: -0.04em;
   max-width: 10ch;
+  text-shadow: 0 4px 24px rgba(0, 0, 0, 0.8);
 }
 
 .lede {
@@ -157,7 +169,7 @@ select {
 
 .eyebrow {
   margin: 0 0 10px;
-  color: #ff9f5a;
+  color: #00e676;
   text-transform: uppercase;
   letter-spacing: 0.18em;
   font-size: 0.74rem;
@@ -270,8 +282,8 @@ select {
   border-radius: 50%;
   background:
     radial-gradient(circle at center, rgba(12, 20, 34, 0.95) 56%, transparent 57%),
-    conic-gradient(from 220deg, #ff9f5a 0%, #74a0ff 55%, #6cffbf 100%);
-  box-shadow: inset 0 0 0 12px rgba(10, 16, 28, 0.82);
+    conic-gradient(from 220deg, #00e676 0%, #00a855 55%, #6cffbf 100%);
+  box-shadow: 0 0 40px rgba(0, 230, 118, 0.15), inset 0 0 0 12px rgba(10, 16, 28, 0.82);
 }
 
 .score-ring strong {
@@ -343,8 +355,8 @@ select {
 .bar-fill {
   width: 100%;
   border-radius: 999px 999px 8px 8px;
-  background: linear-gradient(180deg, #ffbf89 0%, #7fb0ff 45%, #61f6bf 100%);
-  box-shadow: 0 18px 30px rgba(102, 160, 255, 0.18);
+  background: linear-gradient(180deg, #00e676 0%, #00a855 45%, #61f6bf 100%);
+  box-shadow: 0 18px 30px rgba(0, 230, 118, 0.18);
 }
 
 .agent-list {
@@ -516,8 +528,8 @@ select {
   padding: 12px 22px;
   border-radius: 999px;
   border: 1px solid rgba(255, 255, 255, 0.14);
-  background: rgba(255, 159, 90, 0.15);
-  color: #ffb97a;
+  background: rgba(0, 230, 118, 0.15);
+  color: #00e676;
   font-weight: 700;
   font-size: 0.88rem;
   letter-spacing: 0.06em;
@@ -526,8 +538,8 @@ select {
 }
 
 .run-btn:hover:not(:disabled) {
-  background: rgba(255, 159, 90, 0.28);
-  border-color: rgba(255, 159, 90, 0.4);
+  background: rgba(0, 230, 118, 0.28);
+  border-color: rgba(0, 230, 118, 0.4);
 }
 
 .run-btn:disabled {

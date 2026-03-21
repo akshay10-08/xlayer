@@ -6,3 +6,7 @@ coverage
 .env
 .env.*
 !.env.example
+
+dashboard.log
+tmp/
+*.tsbuildinfo
