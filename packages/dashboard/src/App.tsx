@@ -1,477 +1,444 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { DashboardSnapshot } from "./types";
-import { loadDashboardSnapshot, refreshSnapshot, driftPrice } from "./lib/mockApi";
+import { analyzeSymbol } from "./lib/mockApi";
 import WalletButton from "./components/WalletButton";
 
-function formatCurrency(value: number) {
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "USD",
-    maximumFractionDigits: 4,
-  }).format(value);
+// ─── Types ────────────────────────────────────────────────────────────────────
+type Phase = "landing" | "loading" | "results";
+type RiskLevel = "safe" | "balanced" | "degen";
+const PAIRS = ["OKB/USDC", "ETH/USDC", "BTC/USDC", "SOL/USDC"] as const;
+type Pair = (typeof PAIRS)[number];
+
+// ─── Plain-English Translators ────────────────────────────────────────────────
+function technicalToText(reasons: string[]): string {
+  const r = reasons.join(" ").toLowerCase();
+  if (r.includes("bearish") || r.includes("rsi") && r.includes("below"))
+    return "Price is below key averages — momentum looks weak right now.";
+  if (r.includes("bullish") || r.includes("above"))
+    return "Price is above key averages — momentum is building.";
+  return "Technical indicators are mixed — market is ranging sideways.";
 }
 
-function formatVolume(value: number) {
-  return new Intl.NumberFormat("en-US", {
-    notation: "compact",
-    maximumFractionDigits: 1,
-  }).format(value);
+function whaleToText(reasons: string[]): string {
+  const r = reasons.join(" ").toLowerCase();
+  if (r.includes("negative") || r.includes("selling") || r.includes("distribution"))
+    return "Big wallets are quietly offloading their bags.";
+  if (r.includes("positive") || r.includes("accumul"))
+    return "Big wallets are quietly accumulating — smart money is buying.";
+  return "Whale activity is neutral — no strong buying or selling signals.";
 }
 
-function DirectionBadge({ value }: { value: string }) {
-  return <span className={`badge badge-${value.toLowerCase()}`}>{value}</span>;
+function sentimentToText(reasons: string[]): string {
+  const r = reasons.join(" ").toLowerCase();
+  if (r.includes("bearish") || r.includes("fear") || r.includes("negative"))
+    return "Community mood is cautious — some fear in the market.";
+  if (r.includes("bullish") || r.includes("excitement") || r.includes("positive"))
+    return "Community is excited — lots of bullish chatter online.";
+  return "Social sentiment is neutral — hype is cooling down a little.";
 }
 
-function StepIcon({ status }: { status: "done" | "skipped" | "blocked" }) {
-  if (status === "done") return <span className="step-icon step-done">✓</span>;
-  if (status === "blocked") return <span className="step-icon step-blocked">✗</span>;
-  return <span className="step-icon step-skipped">–</span>;
+function agentToText(agentId: string, reasons: string[]): string {
+  if (agentId === "technical") return technicalToText(reasons);
+  if (agentId === "whale") return whaleToText(reasons);
+  return sentimentToText(reasons);
 }
 
-export default function App() {
-  const [snapshot, setSnapshot] = useState<DashboardSnapshot | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [running, setRunning] = useState(false);
-  const [highlightedAgentIndex, setHighlightedAgentIndex] = useState<number | null>(null);
-  const tickRef = useRef(0);
-  const paymentLogRef = useRef<HTMLDivElement>(null);
+function verdictSummary(explanation: string[]): string {
+  const raw = explanation.join(" ");
+  const match = raw.match(/(\d+\/\d+) aligned agents/);
+  const aligned = match ? match[1] : "2/3";
+  const action = raw.toLowerCase().includes("long") || raw.toLowerCase().includes("buy")
+    ? "buying" : raw.toLowerCase().includes("short") || raw.toLowerCase().includes("sell")
+    ? "selling" : "holding";
+  return `${aligned} agents agree the market is ripe for ${action}. The signal is strong enough for the coordinator to act.`;
+}
 
-  const isReady = snapshot !== null;
+function riskToText(flags: string[]): { ok: boolean; label: string }[] {
+  const checks = [
+    { key: "HIGH_SLIPPAGE", label: "Slippage safe", invert: true },
+    { key: "LOW_CONFIDENCE", label: "Confidence OK", invert: true },
+    { key: "HIGH_VOLATILITY", label: "Volatility low", invert: true },
+    { key: "SPREAD_OK", label: "Spread OK", invert: false },
+  ];
+  const upperFlags = flags.map((f) => f.toUpperCase());
+  return checks.map((c) => ({
+    label: c.label,
+    ok: c.invert ? !upperFlags.some((f) => f.includes(c.key.split("_")[1]!)) : true,
+  }));
+}
 
-  // Initial load
+function verdictColor(action: string) {
+  if (action === "BUY") return "#00e676";
+  if (action === "SELL") return "#ff8c97";
+  return "#ffd54f";
+}
+
+function verdictEmoji(action: string) {
+  if (action === "BUY") return "🟢";
+  if (action === "SELL") return "🔴";
+  return "🟡";
+}
+
+function agentIcon(agentId: string) {
+  if (agentId === "technical") return "📈";
+  if (agentId === "whale") return "🐋";
+  return "😌";
+}
+
+function agentLabel(agentId: string) {
+  if (agentId === "technical") return "Technical";
+  if (agentId === "whale") return "Whale Tracker";
+  return "Sentiment";
+}
+
+// ─── Loading Steps ────────────────────────────────────────────────────────────
+const LOADING_STEPS = [
+  { delay: 400, text: "🤖 Waking up agents..." },
+  { delay: 900, text: "💸 Dispatching x402 payments..." },
+  { delay: 1500, text: "📊 Agents are analyzing the market..." },
+  { delay: 2400, text: "🧠 Coordinator is deciding..." },
+];
+
+// ─── Sub-components ───────────────────────────────────────────────────────────
+function LoadingScreen({ pair }: { pair: Pair }) {
+  const [visibleSteps, setVisibleSteps] = useState<number[]>([]);
+  const pairLabel = pair;
+
   useEffect(() => {
-    let mounted = true;
-    loadDashboardSnapshot()
-      .then((data) => { if (mounted) setSnapshot(data); })
-      .catch((err) => { if (mounted) setError(err instanceof Error ? err.message : "Failed to load"); });
-    return () => { mounted = false; };
-  }, []);
-
-  // Price-only drift between polls (honest)
-  useEffect(() => {
-    if (!isReady) return;
-    const id = window.setInterval(() => {
-      tickRef.current += 1;
-      setSnapshot((s) => s ? driftPrice(s, tickRef.current) : s);
-    }, 4500);
-    return () => window.clearInterval(id);
-  }, [isReady]);
-
-  // Real re-fetch from orchestrator every 30 s
-  useEffect(() => {
-    if (!isReady) return;
-    const id = window.setInterval(async () => {
-      const fresh = await refreshSnapshot();
-      if (fresh) setSnapshot(fresh);
-    }, 30_000);
-    return () => window.clearInterval(id);
-  }, [isReady]);
-
-  // Auto-scroll payment log when new receipts appear
-  useEffect(() => {
-    if (paymentLogRef.current) {
-      paymentLogRef.current.scrollTop = paymentLogRef.current.scrollHeight;
-    }
-  }, [snapshot?.receipts]);
-
-  // Manual "Run agents" trigger
-  const handleRun = useCallback(async () => {
-    setRunning(true);
-    setHighlightedAgentIndex(null);
-    try {
-      const fresh = await refreshSnapshot();
-      if (fresh) {
-        setSnapshot(fresh);
-        // Highlight sequence
-        for (let i = 0; i < fresh.agents.length; i++) {
-          setHighlightedAgentIndex(i);
-          await new Promise(r => setTimeout(r, 200));
-        }
-        setHighlightedAgentIndex(null);
-      }
-    } finally {
-      setRunning(false);
-    }
-  }, []);
-
-  const summary = useMemo(() => {
-    if (!snapshot) return null;
-    const activeAgents = snapshot.agents.filter(
-      (a) => a.action === "BUY" || a.action === "SELL"
-    ).length;
-    const liveConfidence = Math.round(snapshot.consensus.finalScore * 100);
-    return { activeAgents, liveConfidence };
-  }, [snapshot]);
-
-  if (error) {
-    return (
-      <main className="shell center">
-        <section className="panel error-panel">
-          <p className="eyebrow">Signal Swarm</p>
-          <h1>Dashboard unavailable</h1>
-          <p>{error}</p>
-        </section>
-      </main>
+    const timers = LOADING_STEPS.map((s, i) =>
+      window.setTimeout(() => setVisibleSteps((prev) => [...prev, i]), s.delay)
     );
-  }
-
-  if (!snapshot || !summary) {
-    return (
-      <main className="shell center">
-        <section className="panel loading-panel">
-          <p className="eyebrow">Signal Swarm</p>
-          <h1>Loading agent mesh</h1>
-          <p>Bootstrapping market data, consensus state, and execution trace.</p>
-        </section>
-      </main>
-    );
-  }
+    return () => timers.forEach(clearTimeout);
+  }, []);
 
   return (
-    <main className="shell">
+    <main className="shell center loading-shell">
+      <div className="ambient ambient-one" />
+      <div className="ambient ambient-two" />
+      <div className="loading-card">
+        <div className="loading-logo pulse-ring">⚡ SIGNAL SWARM</div>
+        <p className="loading-pair">Analyzing {pairLabel}</p>
+        <div className="loading-steps">
+          {LOADING_STEPS.map((s, i) => (
+            <div
+              key={i}
+              className={`loading-step ${visibleSteps.includes(i) ? "step-visible" : ""}`}
+            >
+              {s.text}
+            </div>
+          ))}
+        </div>
+      </div>
+    </main>
+  );
+}
+
+function LandingScreen({
+  onSubmit,
+}: {
+  onSubmit: (pair: Pair, risk: RiskLevel) => void;
+}) {
+  const [pair, setPair] = useState<Pair>("OKB/USDC");
+  const [risk, setRisk] = useState<RiskLevel>("balanced");
+
+  return (
+    <main className="shell center landing-shell">
       <div className="ambient ambient-one" />
       <div className="ambient ambient-two" />
 
-      {/* ── Hero ─────────────────────────────────────────── */}
-      <header className="hero panel">
-        <div className="hero-copy">
-          <div className="hero-top-row">
-            <p className="eyebrow">Signal Swarm / X Layer</p>
-            <WalletButton />
+      <div className="landing-outer">
+        <div className="wallet-topbar">
+          <WalletButton />
+        </div>
+
+        <div className="landing-card">
+          <div className="landing-logo">⚡ SIGNAL SWARM</div>
+          <p className="landing-subtitle">Ask our AI agents what to trade</p>
+
+          <div className="field-group">
+            <label className="field-label">🔍 Which pair?</label>
+            <select
+              className="pair-select"
+              value={pair}
+              onChange={(e) => setPair(e.target.value as Pair)}
+            >
+              {PAIRS.map((p) => (
+                <option key={p} value={p}>
+                  {p}
+                </option>
+              ))}
+            </select>
           </div>
-          <h1>Multi-agent trading intelligence with paid signal exchange.</h1>
-          <p className="lede">
-            Specialist agents price their own views via x402 micropayments, the coordinator
-            weights consensus, and execution only clears when risk says the route is safe.
-          </p>
-          <button
-            className="run-btn"
-            onClick={() => { void handleRun(); }}
-            disabled={running}
-          >
-            {running ? "Agents analyzing..." : "▶ Run New Cycle"}
+
+          <div className="field-group">
+            <label className="field-label">🛡️ Your risk level?</label>
+            <div className="risk-options">
+              {(
+                [
+                  ["safe", "Safe 🐢"],
+                  ["balanced", "Balanced ⚖️"],
+                  ["degen", "Degen 🚀"],
+                ] as [RiskLevel, string][]
+              ).map(([value, label]) => (
+                <label key={value} className={`risk-option ${risk === value ? "selected" : ""}`}>
+                  <input
+                    type="radio"
+                    name="risk"
+                    value={value}
+                    checked={risk === value}
+                    onChange={() => setRisk(value)}
+                  />
+                  {label}
+                </label>
+              ))}
+            </div>
+          </div>
+
+          <button className="ask-btn" onClick={() => onSubmit(pair, risk)}>
+            🔮 Ask the Swarm
           </button>
-          <span className="last-updated">
-            Last computed: {new Date(snapshot.generatedAt).toLocaleTimeString()}
+
+          <div className="or-divider">── or ──</div>
+
+          <WalletButton variant="inline" />
+        </div>
+
+        <p className="landing-tagline">
+          3 specialist AI agents · paid signal mesh · x402 protocol
+        </p>
+      </div>
+    </main>
+  );
+}
+
+// ─── Results Screen ───────────────────────────────────────────────────────────
+function ResultsScreen({
+  snapshot,
+  pair,
+  isDemoMode,
+  onReset,
+}: {
+  snapshot: DashboardSnapshot;
+  pair: Pair;
+  isDemoMode: boolean;
+  onReset: () => void;
+}) {
+  const [receiptOpen, setReceiptOpen] = useState(false);
+  const [visibleCards, setVisibleCards] = useState<number[]>([]);
+
+  useEffect(() => {
+    snapshot.agents.forEach((_, i) => {
+      window.setTimeout(
+        () => setVisibleCards((prev) => [...prev, i]),
+        200 + i * 220
+      );
+    });
+  }, [snapshot.agents]);
+
+  const verdict = snapshot.consensus.action;
+  const confidence = Math.round(snapshot.consensus.finalScore * 100);
+  const price = snapshot.market.price;
+  const changePct = snapshot.market.changePct;
+  const summary = verdictSummary(snapshot.consensus.explanation);
+  const totalPaid = (snapshot.receipts ?? []).reduce(
+    (s, r) => s + r.amountUsd,
+    0
+  );
+  const riskChecks = riskToText(snapshot.risk?.flags ?? []);
+  const isBlocked = snapshot.risk?.action === "BLOCK";
+
+  const shareText = encodeURIComponent(
+    `Just asked 3 AI agents about ${pair} on @SignalSwarm ⚡\nVerdict: ${verdictEmoji(verdict)} ${verdict} · ${confidence}% confidence · x402-powered signal mesh\nAgents paid each other $${totalPaid.toFixed(2)} USDC for these signals\n#XLayer #x402 #AIAgents`
+  );
+  const tweetUrl = `https://twitter.com/intent/tweet?text=${shareText}`;
+
+  return (
+    <main className="shell results-shell">
+      <div className="ambient ambient-one" />
+      <div className="ambient ambient-two" />
+
+      <div className="results-top-bar">
+        <span className="results-logo">⚡ SIGNAL SWARM</span>
+        <div className="results-topbar-right">
+          {isDemoMode && <span className="demo-badge">⚡ Demo mode</span>}
+          <WalletButton />
+        </div>
+      </div>
+
+      {/* SECTION A — VERDICT */}
+      <section className="verdict-section">
+        <div className="verdict-pair-row">
+          <span className="verdict-pair">{pair}</span>
+          <span className="verdict-price">${price.toFixed(4)}</span>
+          <span className={`verdict-change ${changePct >= 0 ? "positive" : "negative"}`}>
+            {changePct >= 0 ? "+" : ""}{changePct.toFixed(2)}% today
           </span>
         </div>
-
-        <div className="hero-metrics">
-          <div className="metric">
-            <span>Market</span>
-            <strong>{snapshot.market.symbol || snapshot.pair}</strong>
+        <div className="verdict-card">
+          <div
+            className="verdict-action"
+            style={{ color: verdictColor(verdict) }}
+          >
+            {verdictEmoji(verdict)} {verdict}
           </div>
-          <div className="metric">
-            <span>Price</span>
-            <strong>{formatCurrency(snapshot.market.price)}</strong>
-          </div>
-          <div className="metric">
-            <span>24h change</span>
-            <strong className={snapshot.market.changePct >= 0 ? "positive" : "negative"}>
-              {snapshot.market.changePct >= 0 ? "+" : ""}
-              {snapshot.market.changePct.toFixed(2)}%
-            </strong>
-          </div>
-          <div className="metric">
-            <span>24h volume</span>
-            <strong>{formatVolume(snapshot.market.volume24h)}</strong>
-          </div>
-          <div className="metric">
-            <span>Active agents</span>
-            <strong>{summary.activeAgents}</strong>
-          </div>
+          <div className="verdict-confidence">{confidence}% confidence</div>
+          <p className="verdict-summary">"{summary}"</p>
         </div>
-      </header>
-
-      {/* ── Main Grid ─────────────────────────────────────── */}
-      <section className="dashboard-grid">
-
-        {/* Coordinator verdict */}
-        <article className="panel consensus-panel">
-          <div className="section-head">
-            <div>
-              <p className="eyebrow">Consensus engine</p>
-              <h2>Coordinator verdict</h2>
-            </div>
-            <DirectionBadge value={snapshot.consensus.action} />
-          </div>
-
-          <div className="consensus-score">
-            <div className="score-ring">
-              <strong>{summary.liveConfidence}%</strong>
-              <span>confidence</span>
-            </div>
-            <div className="consensus-copy">
-              <p>{snapshot.consensus.explanation.join(" ")}</p>
-              <ul className="consensus-tags">
-                <li>{snapshot.consensus.shouldExecute ? "EXECUTE" : "WAIT"}</li>
-                <li>{snapshot.risk.action === "APPROVE" ? "LOW" : "HIGH"} RISK</li>
-                <li>HIGH LIQUIDITY</li>
-              </ul>
-            </div>
-          </div>
-
-          <div className="timeline">
-            {[90, 85, 95, 88, 92].map((value, index) => (
-              <div key={index} className="bar-wrap">
-                <span className="bar-label">{index + 1}</span>
-                <div className="bar-track">
-                  <div className="bar-fill" style={{ height: `${value}%` }} />
-                </div>
-              </div>
-            ))}
-          </div>
-          <p className="subtle" style={{ marginTop: 8, fontSize: "0.76rem" }}>
-            Agent confidence per round (last 5 rounds)
-          </p>
-        </article>
-
-        {/* Specialist agents — Risk Manager excluded */}
-        <article className="panel agents-panel">
-          <div className="section-head">
-            <div>
-              <p className="eyebrow">Specialists</p>
-              <h2>Agent cards</h2>
-            </div>
-            <span className="x402-badge">⚡ x402 paywall active</span>
-          </div>
-
-          <div className="agent-list">
-            {snapshot.agents.map((agent, index) => (
-              <section key={agent.id} className={`agent-card ${highlightedAgentIndex === index ? 'highlight-pulse' : ''}`}>
-                <div className="agent-top">
-                  <div>
-                    <h3>{agent.agent}</h3>
-                    <p>Agent</p>
-                  </div>
-                  <DirectionBadge value={agent.action} />
-                </div>
-
-                <div className="agent-meta">
-                  <span>{agent.reasons[0]}</span>
-                  <span>{Math.round(agent.confidence * 100)}% confidence</span>
-                  <span>90 ms</span>
-                </div>
-
-                <p className="agent-reasoning">{agent.reasons.slice(1).join(" ")}</p>
-
-                <div className="agent-foot">
-                  <span className="payment-tag">💳 {agent.payment?.id || 'unpaid'}</span>
-                  <span>Signal sold</span>
-                </div>
-              </section>
-            ))}
-          </div>
-        </article>
-
-        {/* Execution book */}
-        <article className="panel positions-panel">
-          <div className="section-head">
-            <div>
-              <p className="eyebrow">Execution book</p>
-              <h2>Open positions</h2>
-            </div>
-            <span className="subtle">Simulated portfolio</span>
-          </div>
-
-          <div className="table">
-            <div className="table-row table-head">
-              <span>Pair</span>
-              <span>Side</span>
-              <span>Size</span>
-              <span>PnL</span>
-              <span>Status</span>
-            </div>
-            {snapshot.positions.map((p) => (
-              <div className="table-row" key={p.pair + p.side}>
-                <span>
-                  <strong>{p.pair}</strong>
-                  <small>Exposure</small>
-                </span>
-                <span>{p.side}</span>
-                <span>${p.exposureUsd.toFixed(0)}</span>
-                <span className={p.pnlPct >= 0 ? "positive" : "negative"}>
-                  {p.pnlPct.toFixed(2)}%
-                </span>
-                <span>{p.side === "FLAT" ? "Watching" : "Open"}</span>
-              </div>
-            ))}
-          </div>
-        </article>
-
-        {/* Trade history */}
-        <article className="panel trades-panel">
-          <div className="section-head">
-            <div>
-              <p className="eyebrow">Trade history</p>
-              <h2>Recent decisions</h2>
-            </div>
-            <span className="subtle">Latest {snapshot.generatedAt.slice(11, 16)} UTC</span>
-          </div>
-
-          <div className="trade-list">
-            {snapshot.decisionSteps.map((trade) => (
-              <div className="trade-row" key={trade.label}>
-                <div>
-                  <strong>{snapshot.generatedAt.slice(11, 16)}</strong>
-                  <p>{trade.label}</p>
-                </div>
-                <div>
-                  <strong>{trade.status}</strong>
-                  <p></p>
-                </div>
-                <div>
-                  <strong></strong>
-                  <p>{trade.detail}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </article>
       </section>
 
-      {/* ── Bottom Strip ─────────────────────────────────── */}
-      <section className="bottom-strip">
+      {/* SECTION B — AGENT CARDS */}
+      <section className="agents-section">
+        <h2 className="section-title">What each agent thinks</h2>
+        <div className="agent-grid">
+          {snapshot.agents.map((agent, i) => {
+            const payment = snapshot.receipts?.find(
+              (r) => r.targetAgent === agent.agent
+            );
+            return (
+              <div
+                key={agent.id}
+                className={`agent-result-card ${visibleCards.includes(i) ? "card-visible" : ""}`}
+              >
+                <div className="arc-header">
+                  <span className="arc-icon">{agentIcon(agent.agent)}</span>
+                  <span className="arc-label">{agentLabel(agent.agent)}</span>
+                  <span
+                    className="arc-action"
+                    style={{ color: verdictColor(agent.action) }}
+                  >
+                    {verdictEmoji(agent.action)} {agent.action}
+                  </span>
+                </div>
+                <div className="arc-confidence">
+                  {Math.round(agent.confidence * 100)}% sure
+                </div>
+                <p className="arc-text">"{agentToText(agent.agent, agent.reasons)}"</p>
+                {payment && (
+                  <div className="arc-payment">
+                    💸 Paid ${payment.amountUsd.toFixed(2)} USDC
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </section>
 
-        {/* Risk Gate — visually authoritative */}
-        {snapshot.risk && (
-          <article className={`panel risk-gate-panel ${snapshot.risk.action === "APPROVE" ? "gate-approve" : "gate-block"}`}>
-            <div className="section-head">
-              <div>
-                <p className="eyebrow">Risk Gate</p>
-                <h2>Risk Manager</h2>
-              </div>
-              <span className={`gate-verdict ${snapshot.risk.action === "APPROVE" ? "verdict-approve" : "verdict-block"}`}>
-                {snapshot.risk.action === "APPROVE" ? "✓ APPROVED" : "✗ BLOCKED"}
-              </span>
-            </div>
-            <div className="gate-body">
-              <p className="gate-reason">{snapshot.risk.reasons[0]}</p>
-              <div className="gate-stats">
-                <div className="gate-stat">
-                  <span>Max position</span>
-                  <strong>${snapshot.risk.maxPositionUsd.toFixed(0)}</strong>
-                </div>
-                <div className="gate-stat">
-                  <span>Slippage cap</span>
-                  <strong>{snapshot.risk.maxSlippageBps} bps</strong>
-                </div>
-                <div className="gate-stat">
-                  <span>Trade authority</span>
-                  <strong>{snapshot.risk.action === "APPROVE" ? "Granted" : "Withheld"}</strong>
-                </div>
-              </div>
-              {snapshot.risk.flags.length > 0 && (
-                <div className="gate-flags">
-                  {snapshot.risk.flags.map((f) => (
-                    <span key={f} className="gate-flag">⚠ {f.replace(/_/g, " ")}</span>
-                  ))}
-                </div>
-              )}
-            </div>
-          </article>
+      {/* SECTION C — RISK CHECK */}
+      <section className="risk-section">
+        <h2 className="section-title">Risk Check</h2>
+        <div className="risk-row">
+          {riskChecks.map((c) => (
+            <span key={c.label} className={`risk-chip ${c.ok ? "chip-ok" : "chip-fail"}`}>
+              {c.ok ? "✅" : "❌"} {c.label}
+            </span>
+          ))}
+        </div>
+        {isBlocked && (
+          <div className="risk-warning">
+            ⚠️ <strong>Heads up:</strong> Our risk manager flagged this trade. Slippage or
+            confidence was too high to execute safely. Agents still gave their verdict, but
+            trade execution was paused.
+          </div>
         )}
+      </section>
 
-        {/* x402 Payment Log */}
-        {snapshot.receipts && snapshot.receipts.length > 0 && (
-          <article className="panel payments-panel hero-payments">
-            <div className="section-head">
-              <div>
-                <p className="eyebrow">x402 Protocol</p>
-                <h2><span className="pulse-dot"></span> x402 Payment Network</h2>
+      {/* SECTION D — x402 RECEIPT */}
+      <section className="receipt-section">
+        <button
+          className="receipt-toggle"
+          onClick={() => setReceiptOpen((o) => !o)}
+        >
+          💸 How agents got paid {receiptOpen ? "▲" : "▼"}
+        </button>
+        {receiptOpen && (
+          <div className="receipt-body">
+            {(snapshot.receipts ?? []).map((r) => (
+              <div key={r.id} className="receipt-row">
+                <span className="receipt-agent">{r.targetAgent} agent</span>
+                <span className="receipt-amount">${r.amountUsd.toFixed(2)} USDC</span>
+                <span className="receipt-ref">ref: {r.id.slice(0, 18)}</span>
               </div>
-              <span className="x402-badge">⚡ Live settlement</span>
+            ))}
+            <div className="receipt-total">
+              Total: ${totalPaid.toFixed(2)} USDC across{" "}
+              {snapshot.receipts?.length ?? 0} signals
             </div>
-            <div className="payment-log" ref={paymentLogRef}>
-              {snapshot.receipts.map((p) => (
-                <div key={p.id} className="payment-row">
-                  <div className="payment-agent">
-                    <strong>{p.targetAgent}</strong>
-                  </div>
-                  <div className="payment-amount">
-                    <strong>${p.amountUsd.toFixed(2)} USDC</strong>
-                  </div>
-                  <div className="payment-tx">
-                    <code>{p.id.slice(0, 18)}…</code>
-                    <span>{new Date(p.createdAt).toLocaleTimeString()}</span>
-                  </div>
-                </div>
-              ))}
-            </div>
-            <div className="payment-footer">
-              Total paid: {snapshot.receipts.reduce((sum, p) => sum + p.amountUsd, 0).toFixed(2)} USDC across {snapshot.receipts.length} signals
-            </div>
-          </article>
-        )}
-
-        {/* Decision Timeline */}
-        {snapshot.decisionSteps && snapshot.decisionSteps.length > 0 && (
-          <article className="panel decision-flow-panel">
-            <div className="section-head">
-              <div>
-                <p className="eyebrow">Agent mesh</p>
-                <h2>Decision flow</h2>
-              </div>
-            </div>
-            <ol className="step-list">
-              {snapshot.decisionSteps.map((step, i) => (
-                <li key={i} className={`step-item step-${step.status}`}>
-                  <StepIcon status={step.status} />
-                  <div className="step-body">
-                    <strong>{step.label}</strong>
-                    <p>{step.detail}</p>
-                  </div>
-                </li>
-              ))}
-            </ol>
-          </article>
-        )}
-
-        {/* Execution Proof */}
-        {snapshot.executionProof && (
-          <article className="panel proof-panel">
-            <div className="section-head">
-              <div>
-                <p className="eyebrow">On-chain</p>
-                <h2>Execution proof</h2>
-              </div>
-              <span className="network-badge">🔗 {snapshot.executionProof.network}</span>
-            </div>
-            <div className="proof-grid">
-              <div className="proof-stat">
-                <span>Status</span>
-                <strong className={snapshot.executionProof.status === "REJECTED" ? "negative" : "positive"}>
-                  {snapshot.executionProof.status}
-                </strong>
-              </div>
-              <div className="proof-stat">
-                <span>Fill price</span>
-                <strong>{snapshot.executionProof.fillPrice}</strong>
-              </div>
-              <div className="proof-stat">
-                <span>Notional</span>
-                <strong>{snapshot.executionProof.notionalUsd}</strong>
-              </div>
-              <div className="proof-stat">
-                <span>Slippage</span>
-                <strong>{snapshot.executionProof.slippageBps}</strong>
-              </div>
-            </div>
-            <div className="proof-tx">
-              <span>Tx hash</span>
-              <code className="tx-hash">{snapshot.executionProof.txHash.slice(0, 20)}…{snapshot.executionProof.txHash.slice(-8)}</code>
+            {snapshot.executionProof?.explorerUrl && (
               <a
                 href={snapshot.executionProof.explorerUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="explorer-link"
+                className="oklink-btn"
               >
-                View on OKLink ↗
+                🔗 View execution on OKLink ↗
               </a>
-            </div>
-          </article>
+            )}
+          </div>
         )}
+      </section>
+
+      {/* SECTION E — ACTIONS */}
+      <section className="actions-section">
+        <button className="action-btn secondary" onClick={onReset}>
+          🔄 Analyze another pair
+        </button>
+        <a
+          className="action-btn primary"
+          href={tweetUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          📤 Share this signal
+        </a>
       </section>
     </main>
   );
+}
+
+// ─── Root App ─────────────────────────────────────────────────────────────────
+export default function App() {
+  const [phase, setPhase] = useState<Phase>("landing");
+  const [selectedPair, setSelectedPair] = useState<Pair>("OKB/USDC");
+  const [snapshot, setSnapshot] = useState<DashboardSnapshot | null>(null);
+  const [isDemoMode, setIsDemoMode] = useState(false);
+  const fetchedRef = useRef(false);
+
+  const handleAsk = useCallback(async (pair: Pair, _risk: RiskLevel) => {
+    setSelectedPair(pair);
+    setPhase("loading");
+    fetchedRef.current = false;
+
+    try {
+      const { data, demo } = await analyzeSymbol(pair, _risk);
+      setSnapshot(data);
+      setIsDemoMode(demo);
+    } catch {
+      setIsDemoMode(true);
+    }
+
+    // Minimum 3s loading for the animation to play out
+    await new Promise((r) => setTimeout(r, 3000));
+    setPhase("results");
+  }, []);
+
+  const handleReset = useCallback(() => {
+    setPhase("landing");
+    setSnapshot(null);
+  }, []);
+
+  if (phase === "landing") return <LandingScreen onSubmit={handleAsk} />;
+  if (phase === "loading") return <LoadingScreen pair={selectedPair} />;
+  if (phase === "results" && snapshot)
+    return (
+      <ResultsScreen
+        snapshot={snapshot}
+        pair={selectedPair}
+        isDemoMode={isDemoMode}
+        onReset={handleReset}
+      />
+    );
+
+  // Fallback if still loading
+  return <LoadingScreen pair={selectedPair} />;
 }
