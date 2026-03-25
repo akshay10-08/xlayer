@@ -29,10 +29,10 @@ function directionToAction(dir: "LONG" | "SHORT" | "NEUTRAL"): "BUY" | "SELL" | 
   return dir === "LONG" ? "BUY" : dir === "SHORT" ? "SELL" : "HOLD";
 }
 
-export async function buildSnapshot(): Promise<DashboardSnapshot> {
+export async function buildSnapshot(symbol = "OKB/USDC"): Promise<DashboardSnapshot> {
   const coordinator = new Coordinator();
   const result = await coordinator.run({
-    symbol: "OKB/USDC",
+    symbol,
     timeframe: "15m",
     balanceUsd: 1000,
   });

@@ -3,24 +3,46 @@ import type { DashboardSnapshot } from "../types";
 const API_URL = "http://localhost:4000";
 const MOCK_PATH = "/mock-data.json";
 
-export async function loadDashboardSnapshot(): Promise<DashboardSnapshot> {
+export async function analyzeSymbol(
+  symbol: string,
+  riskProfile: string
+): Promise<{ data: DashboardSnapshot; demo: boolean }> {
   try {
-    const apiResponse = await fetch(`${API_URL}/api/snapshot`, { cache: "no-store" });
-    if (apiResponse.ok) {
-      return (await apiResponse.json()) as DashboardSnapshot;
+    const res = await fetch(`${API_URL}/api/analyze`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ symbol, riskProfile }),
+      cache: "no-store",
+    });
+    if (res.ok) {
+      return { data: (await res.json()) as DashboardSnapshot, demo: false };
     }
-  } catch (error) {
-    console.warn("Live orchestrator unreachable, falling back to mock data");
+  } catch {
+    console.warn("Orchestrator unreachable, using mock data (demo mode)");
   }
-  
-  const response = await fetch(MOCK_PATH, { cache: "no-store" });
-  return (await response.json()) as DashboardSnapshot;
+
+  // Fallback: try GET /api/snapshot
+  try {
+    const res = await fetch(`${API_URL}/api/snapshot`, { cache: "no-store" });
+    if (res.ok) {
+      return { data: (await res.json()) as DashboardSnapshot, demo: true };
+    }
+  } catch {}
+
+  // Final fallback: static mock file
+  const res = await fetch(MOCK_PATH, { cache: "no-store" });
+  return { data: (await res.json()) as DashboardSnapshot, demo: true };
+}
+
+export async function loadDashboardSnapshot(): Promise<DashboardSnapshot> {
+  const { data } = await analyzeSymbol("OKB/USDC", "balanced");
+  return data;
 }
 
 export async function refreshSnapshot(): Promise<DashboardSnapshot | null> {
   try {
-    const apiResponse = await fetch(`${API_URL}/api/snapshot`, { cache: "no-store" });
-    if (apiResponse.ok) return (await apiResponse.json()) as DashboardSnapshot;
+    const res = await fetch(`${API_URL}/api/snapshot`, { cache: "no-store" });
+    if (res.ok) return (await res.json()) as DashboardSnapshot;
   } catch {}
   return null;
 }
