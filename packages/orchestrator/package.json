@@ -7,17 +7,17 @@
     "build": "tsc -p tsconfig.json",
     "dev": "tsx watch src/index.ts",
     "test": "vitest run",
-    "start": "node dist/index.js"
+    "start": "tsx src/server.ts"
   },
   "dependencies": {
-    "@signal-swarm/shared": "0.1.0",
     "@signal-swarm/agents": "0.1.0",
-    "cors": "^2.8.5",
-    "express": "^4.21.2"
+    "@signal-swarm/shared": "0.1.0",
+    "cors": "^2.8.6",
+    "express": "^4.22.1"
   },
   "devDependencies": {
-    "@types/cors": "^2.8.17",
-    "@types/express": "^5.0.1",
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.6",
     "tsx": "^4.19.3",
     "typescript": "^5.8.2"
   }

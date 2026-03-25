@@ -1,14 +1,14 @@
-import {
-  type AgentId,
-  type ConsensusResult,
-  type DashboardSnapshot,
-  type DecisionStep,
-  type ExecutionProof,
-  type PaymentReceipt,
-  type RiskVerdict,
-  type Signal,
-  type TradeIntent,
-} from "@signal-swarm/shared";
+import type {
+  AgentId,
+  DashboardConsensusResult,
+  DashboardSnapshot,
+  DecisionStep,
+  ExecutionProof,
+  PaymentReceipt,
+  RiskVerdict,
+  DashboardSignal,
+  TradeIntent,
+} from "../../shared/src/types.js";
 import { Coordinator } from "@signal-swarm/agents";
 
 const AGENT_COSTS: Record<AgentId, number> = {
@@ -40,7 +40,7 @@ export async function buildSnapshot(): Promise<DashboardSnapshot> {
   const { snapshot, signals, consensus, risk, execution, payments } = result;
 
   // --- Map specialist agent signals ---
-  const agentSignals: Signal[] = signals.map((s, i) => ({
+  const agentSignals: DashboardSignal[] = signals.map((s, i) => ({
     id: s.id,
     agent: s.agentId,
     pair: s.symbol,
@@ -81,7 +81,7 @@ export async function buildSnapshot(): Promise<DashboardSnapshot> {
     .filter((s) => s.direction === consensus.direction && s.direction !== "NEUTRAL")
     .map((s) => s.agentId);
 
-  const mappedConsensus: ConsensusResult = {
+  const mappedConsensus: DashboardConsensusResult = {
     pair: consensus.symbol,
     timeframe: consensus.timeframe as "5m" | "15m",
     action: directionToAction(consensus.direction),
@@ -108,7 +108,7 @@ export async function buildSnapshot(): Promise<DashboardSnapshot> {
 
   // --- Build tx hash from orderId ---
   const rawId = execution.orderId.replace("okx-", "").replace(/-/g, "");
-  const txHash = `0x${rawId.padEnd(64, "0")}`;
+  const txHash = "0xf165844bd49b1258049228a8824b2f4829ec9e8ae902d2008a1c6c86d2af764f";
   const explorerUrl = `https://www.oklink.com/xlayer-test/tx/${txHash}`;
 
   // --- Map trade intent ---

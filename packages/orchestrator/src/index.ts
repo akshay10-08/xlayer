@@ -20,5 +20,5 @@ app.get("/api/snapshot", (_request, response) => {
 });
 
 app.listen(port, () => {
-  console.log(`Signal Swarm orchestrator listening on http://localhost:${port}`);
+  console.log(`Express server running on port ${port}`);
 });

@@ -1,143 +1,232 @@
 {
-  "lastUpdated": "2025-01-15T19:10:00.000Z",
+  "generatedAt": "2026-03-25T16:14:30.160Z",
+  "pair": "OKB/USDC",
+  "timeframe": "15m",
   "market": {
-    "symbol": "OKB/USDC",
-    "price": 0.84,
-    "change24h": 7.71,
-    "volume24h": 18400000,
-    "liquidity": "deep"
-  },
-  "consensus": {
-    "direction": "LONG",
-    "weightedConfidence": 0.84,
-    "shouldExecute": true,
-    "riskLevel": "guarded",
-    "reasoning": "Three specialist agents align on trend continuation while risk remains within slippage and exposure limits."
+    "price": 86.7903,
+    "changePct": 1.3732470863614457,
+    "volume24h": 1146.6100000000001,
+    "volatility24h": 0.0021716947391571587
   },
   "agents": [
     {
-      "id": "technical",
-      "name": "Technical Agent",
-      "role": "Trend and momentum",
-      "direction": "LONG",
-      "confidence": 0.89,
-      "signal": "Breakout continuation",
-      "reasoning": "Price reclaimed the 20 EMA, volatility expanded cleanly, and the current pullback held above the prior range high.",
-      "paidWith": "x402-0xtech-7121",
-      "latencyMs": 82
+      "id": "signal-2722814830",
+      "agent": "technical",
+      "pair": "OKB/USDC",
+      "timeframe": "15m",
+      "action": "SELL",
+      "confidence": 0.6168,
+      "strength": 0.5168,
+      "reasons": [
+        "EMA alignment is bearish, RSI is 44.03, and momentum is -0.85%.",
+        "shortEma: 86.9441",
+        "longEma: 87.135",
+        "rsi: 44.03"
+      ],
+      "riskFlags": [],
+      "freshUntil": 1774455570160,
+      "priceContext": {
+        "spot": 86.7903,
+        "entryRange": [
+          87.5897,
+          86.4481
+        ],
+        "invalidIfBelow": 87.5897,
+        "invalidIfAbove": 86.4481
+      },
+      "payment": {
+        "id": "x402-1914211987",
+        "requester": "coordinator",
+        "targetAgent": "technical",
+        "amountUsd": 1,
+        "currency": "USDC",
+        "status": "simulated",
+        "createdAt": "2026-03-25T16:14:30.160Z"
+      }
     },
     {
-      "id": "whale",
-      "name": "Whale Flow Agent",
-      "role": "Smart-money detection",
-      "direction": "LONG",
-      "confidence": 0.80,
-      "signal": "Accumulation detected",
-      "reasoning": "Sustained inflows from tracked smart-money wallets suggest coordinated accumulation rather than noise.",
-      "paidWith": "x402-0xwhale-a113",
-      "latencyMs": 127
+      "id": "signal-2798700592",
+      "agent": "whale",
+      "pair": "OKB/USDC",
+      "timeframe": "15m",
+      "action": "SELL",
+      "confidence": 0.6345,
+      "strength": 0.5345,
+      "reasons": [
+        "Whale flow is negative, suggesting distribution or passive sell pressure.",
+        "whaleFlowScore: -0.058",
+        "volumeImpulse: -0.635",
+        "score: -0.2745"
+      ],
+      "riskFlags": [],
+      "freshUntil": 1774455570160,
+      "priceContext": {
+        "spot": 86.7903,
+        "entryRange": [
+          86.1947,
+          86.0756
+        ],
+        "invalidIfBelow": 86.1947,
+        "invalidIfAbove": 86.0756
+      },
+      "payment": {
+        "id": "x402-2254734146",
+        "requester": "coordinator",
+        "targetAgent": "whale",
+        "amountUsd": 1.5,
+        "currency": "USDC",
+        "status": "simulated",
+        "createdAt": "2026-03-25T16:14:30.160Z"
+      }
     },
     {
-      "id": "sentiment",
-      "name": "Sentiment Agent",
-      "role": "Narrative and attention",
-      "direction": "NEUTRAL",
-      "confidence": 0.62,
-      "signal": "Narrative cooling",
-      "reasoning": "Social chatter remains positive, but recent mentions are broadening instead of accelerating into a strong catalyst.",
-      "paidWith": "x402-0xsent-2c9e",
-      "latencyMs": 136
+      "id": "signal-1351787840",
+      "agent": "sentiment",
+      "pair": "OKB/USDC",
+      "timeframe": "15m",
+      "action": "SELL",
+      "confidence": 0.88,
+      "strength": 0.78,
+      "reasons": [
+        "Narrative tone is cooling and attention is fading.",
+        "sentimentScore: -0.7875",
+        "score: -0.6608"
+      ],
+      "riskFlags": [],
+      "freshUntil": 1774455570160,
+      "priceContext": {
+        "spot": 86.7903,
+        "entryRange": [
+          85.93,
+          85.6433
+        ],
+        "invalidIfBelow": 85.93,
+        "invalidIfAbove": 85.6433
+      },
+      "payment": {
+        "id": "x402-2774402357",
+        "requester": "coordinator",
+        "targetAgent": "sentiment",
+        "amountUsd": 0.75,
+        "currency": "USDC",
+        "status": "simulated",
+        "createdAt": "2026-03-25T16:14:30.160Z"
+      }
+    }
+  ],
+  "consensus": {
+    "pair": "OKB/USDC",
+    "timeframe": "15m",
+    "action": "SELL",
+    "finalScore": 0.7539,
+    "alignedAgents": [
+      "technical",
+      "whale",
+      "sentiment"
+    ],
+    "shouldRequestRisk": true,
+    "shouldExecute": true,
+    "explanation": [
+      "Weighted consensus points short with 3/3 aligned agents.",
+      "Weighted confidence: 75%",
+      "3 of 3 specialist agents aligned."
+    ]
+  },
+  "risk": {
+    "action": "BLOCK",
+    "confidence": 0.88,
+    "maxPositionUsd": 180,
+    "maxSlippageBps": 20,
+    "flags": [
+      "high_slippage"
+    ],
+    "reasons": [
+      "One or more risk gates failed, so the coordinator should not place the trade."
+    ]
+  },
+  "tradeIntent": null,
+  "receipts": [
+    {
+      "id": "x402-1914211987",
+      "requester": "coordinator",
+      "targetAgent": "technical",
+      "amountUsd": 1,
+      "currency": "USDC",
+      "status": "simulated",
+      "createdAt": "2026-03-25T16:14:30.160Z"
+    },
+    {
+      "id": "x402-2254734146",
+      "requester": "coordinator",
+      "targetAgent": "whale",
+      "amountUsd": 1.5,
+      "currency": "USDC",
+      "status": "simulated",
+      "createdAt": "2026-03-25T16:14:30.160Z"
+    },
+    {
+      "id": "x402-2774402357",
+      "requester": "coordinator",
+      "targetAgent": "sentiment",
+      "amountUsd": 0.75,
+      "currency": "USDC",
+      "status": "simulated",
+      "createdAt": "2026-03-25T16:14:30.160Z"
     }
   ],
   "positions": [
     {
-      "symbol": "OKB/USDC",
-      "side": "LONG",
-      "size": "$18,400",
-      "pnl": "+4.9%",
-      "status": "Open",
-      "entry": "$0.8012",
-      "stop": "$0.7420"
-    },
-    {
-      "symbol": "ETH/USDC",
+      "pair": "OKB/USDC",
       "side": "FLAT",
-      "size": "$0",
-      "pnl": "0.0%",
-      "status": "Watching",
-      "entry": "N/A",
-      "stop": "N/A"
-    }
-  ],
-  "trades": [
-    {
-      "time": "08:32",
-      "symbol": "OKB/USDC",
-      "action": "BUY",
-      "size": "$5,000",
-      "result": "Queued",
-      "reason": "Consensus passed and simulation cleared"
-    },
-    {
-      "time": "07:58",
-      "symbol": "ETH/USDC",
-      "action": "HOLD",
-      "size": "$0",
-      "result": "Skipped",
-      "reason": "Risk manager blocked the setup"
-    }
-  ],
-  "timeline": [62, 71, 68, 74, 79, 84, 88, 85, 83, 86, 84, 87],
-  "riskGate": {
-    "action": "APPROVE",
-    "maxPositionUsd": 50,
-    "maxSlippageBps": 80,
-    "flags": [],
-    "reason": "Position sizing stays below max exposure, simulated slippage is acceptable, and there is no concentration breach."
-  },
-  "payments": [
-    {
-      "txId": "x402-0xtech-7121-settle",
-      "agentId": "technical",
-      "agentName": "Technical Agent",
-      "amountUsd": 1.0,
-      "status": "settled",
-      "settledAt": "2025-01-15T19:09:45.000Z"
-    },
-    {
-      "txId": "x402-0xwhale-a113-settle",
-      "agentId": "whale",
-      "agentName": "Whale Flow Agent",
-      "amountUsd": 1.5,
-      "status": "settled",
-      "settledAt": "2025-01-15T19:09:46.000Z"
-    },
-    {
-      "txId": "x402-0xsent-2c9e-settle",
-      "agentId": "sentiment",
-      "agentName": "Sentiment Agent",
-      "amountUsd": 0.75,
-      "status": "settled",
-      "settledAt": "2025-01-15T19:09:47.000Z"
+      "exposureUsd": 0,
+      "pnlPct": 0
     }
   ],
   "executionProof": {
     "network": "X Layer Testnet",
-    "status": "SIMULATED",
-    "txHash": "0x512558071000000000000000000000000000000000000000000000000000000000",
-    "explorerUrl": "https://www.oklink.com/xlayer-test/tx/0x512558071000000000000000000000000000000000000000000000000000000000",
-    "fillPrice": "$0.8401",
-    "notionalUsd": "$30.00",
-    "slippageBps": "28.5 bps",
-    "executedAt": "2025-01-15T19:10:00.000Z"
+    "status": "REJECTED",
+    "txHash": "0x2267777617000000000000000000000000000000000000000000000000000000",
+    "explorerUrl": "https://www.oklink.com/xlayer-test/tx/0x2267777617000000000000000000000000000000000000000000000000000000",
+    "fillPrice": 86.9773,
+    "notionalUsd": 120,
+    "slippageBps": 25.54,
+    "executedAt": "2026-03-25T16:14:30.160Z"
   },
   "decisionSteps": [
-    { "label": "Market context loaded", "status": "done", "detail": "OKB/USDC @ $0.8400 — 48 candles, 15m timeframe" },
-    { "label": "x402 payments dispatched", "status": "done", "detail": "Coordinator paid 3 agents — $3.25 USDC total" },
-    { "label": "Agent signals computed", "status": "done", "detail": "Technical: LONG (89%) · Whale: LONG (80%) · Sentiment: NEUTRAL (62%)" },
-    { "label": "Coordinator consensus", "status": "done", "detail": "LONG — 84% confidence — 2/3 aligned" },
-    { "label": "Risk gate evaluation", "status": "done", "detail": "APPROVED — max $50, slippage cap 80 bps" },
-    { "label": "Trade simulation", "status": "done", "detail": "Fill @ $0.8401 — slippage 28.5 bps" },
-    { "label": "On-chain submission", "status": "done", "detail": "SIMULATED — tx: 0x5125580710000..." }
+    {
+      "label": "Market context loaded",
+      "status": "done",
+      "detail": "OKB/USDC @ $86.7903 — 96 candles, 15m"
+    },
+    {
+      "label": "x402 payments dispatched",
+      "status": "done",
+      "detail": "Coordinator paid 3 agents — $3.25 USDC total"
+    },
+    {
+      "label": "Agent signals computed",
+      "status": "done",
+      "detail": "Technical Agent: SHORT (62%) · Whale Flow Agent: SHORT (63%) · Sentiment Agent: SHORT (88%)"
+    },
+    {
+      "label": "Coordinator consensus",
+      "status": "done",
+      "detail": "SHORT — 75% confidence — 3/3 aligned"
+    },
+    {
+      "label": "Risk gate evaluation",
+      "status": "blocked",
+      "detail": "BLOCKED — high_slippage"
+    },
+    {
+      "label": "Trade simulation",
+      "status": "done",
+      "detail": "Fill @ $86.9773 — slippage 25.5 bps"
+    },
+    {
+      "label": "On-chain submission",
+      "status": "skipped",
+      "detail": "One or more risk gates failed, so the coordinator should not place the trade."
+    }
   ]
 }
