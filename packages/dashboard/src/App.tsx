@@ -10,7 +10,20 @@ type AppTab = "analyze" | "scanner" | "history";
 type RiskLevel = "safe" | "balanced" | "degen";
 type Timeframe = "15m" | "1h" | "4h" | "1d";
 
-const PAIRS = ["OKB/USDC","ETH/USDC","BTC/USDC","SOL/USDC","ARB/USDC","OP/USDC","LINK/USDC","DOGE/USDC","AVAX/USDC","MATIC/USDC"];
+// Pair data with emoji + accent color
+const PAIR_DATA: { pair: string; emoji: string; color: string }[] = [
+  { pair: "ETH/USDC",  emoji: "🔷", color: "#627EEA" },
+  { pair: "BTC/USDC",  emoji: "🟠", color: "#F7931A" },
+  { pair: "OKB/USDC",  emoji: "⚫", color: "#888" },
+  { pair: "SOL/USDC",  emoji: "🟣", color: "#9945FF" },
+  { pair: "ARB/USDC",  emoji: "🔵", color: "#28A0F0" },
+  { pair: "OP/USDC",   emoji: "🔴", color: "#FF0420" },
+  { pair: "LINK/USDC", emoji: "🔗", color: "#2A5ADA" },
+  { pair: "DOGE/USDC", emoji: "🐕", color: "#C2A633" },
+  { pair: "AVAX/USDC", emoji: "🔺", color: "#E84142" },
+  { pair: "MATIC/USDC",emoji: "🟪", color: "#8247E5" },
+];
+const PAIRS = PAIR_DATA.map((p) => p.pair);
 const TIMEFRAMES: { value: Timeframe; label: string }[] = [
   { value: "15m", label: "15 min" },
   { value: "1h",  label: "1 Hour" },
@@ -47,6 +60,23 @@ function verdictSummary(action: string, agents: number, aligned: number): string
 
 function verdictColor(a: string) { return a==="BUY"?"#00e676":a==="SELL"?"#ff8c97":"#ffd54f"; }
 function verdictEmoji(a: string) { return a==="BUY"?"🟢":a==="SELL"?"🔴":"🟡"; }
+function verdictBg(a: string) {
+  return a === "BUY"
+    ? "rgba(0,230,118,0.15)"
+    : a === "SELL"
+    ? "rgba(255,140,151,0.15)"
+    : "rgba(255,213,79,0.15)";
+}
+function verdictGlow(a: string) {
+  return a === "BUY"
+    ? "0 0 40px rgba(0,230,118,0.35)"
+    : a === "SELL"
+    ? "0 0 40px rgba(255,140,151,0.35)"
+    : "0 0 40px rgba(255,213,79,0.35)";
+}
+function verdictStripe(a: string) {
+  return a === "BUY" ? "#00e676" : a === "SELL" ? "#ff4d60" : "#ffd54f";
+}
 
 function riskChecks(flags: string[]): {ok:boolean;label:string}[] {
   const f = flags.map(x => x.toUpperCase());
@@ -59,9 +89,9 @@ function riskChecks(flags: string[]): {ok:boolean;label:string}[] {
 }
 
 const agentMeta: Record<string, {icon:string;label:string}> = {
-  technical: { icon:"📈", label:"Technical" },
-  whale:     { icon:"🐋", label:"Whale Tracker" },
-  sentiment: { icon:"😌", label:"Sentiment" },
+  technical: { icon:"📈", label:"TECHNICAL" },
+  whale:     { icon:"🐋", label:"WHALE" },
+  sentiment: { icon:"😌", label:"SENTIMENT" },
 };
 
 const LOADING_STEPS = [
@@ -80,7 +110,7 @@ export default function App() {
 
   // ─── Analyze flow ──────────────────────────────────────────────────────────
   const [phase, setPhase]            = useState<Phase>("landing");
-  const [pair, setPair]              = useState<string>("OKB/USDC");
+  const [pair, setPair]              = useState<string>("ETH/USDC");
   const [timeframe, setTimeframe]    = useState<Timeframe>("15m");
   const [risk, setRisk]              = useState<RiskLevel>("balanced");
   const [portfolio, setPortfolio]    = useState<number>(500);
@@ -107,7 +137,6 @@ export default function App() {
     setLoadingStep(0);
     setReceiptOpen(false);
 
-    // Animate steps while waiting
     let step = 0;
     const iv = setInterval(() => {
       step = Math.min(step + 1, LOADING_STEPS.length - 1);
@@ -118,7 +147,6 @@ export default function App() {
       const data = await analyzeSymbol(pair, timeframe, risk, portfolio, isConnected ? address : undefined);
       clearInterval(iv);
       setSnapshot(data);
-      // Extract extra fields that engine now returns
       const anyData = data as unknown as Record<string, unknown>;
       setPosition((anyData.positionSuggestion as PositionSuggestion | null) ?? calcPositionFallback(portfolio, risk, data.consensus.finalScore));
       setOnchainTx((anyData.onchainProofTx as string) ?? data.executionProof.txHash);
@@ -187,47 +215,86 @@ export default function App() {
                 <div className="brand-hero">⚡ SIGNAL SWARM</div>
                 <div className="brand-sub">Ask our AI agents what to trade</div>
 
+                {/* #1 — Pair selector: pill grid */}
                 <div className="input-group">
                   <label>🔍 Which pair?</label>
-                  <select value={pair} onChange={e=>setPair(e.target.value)}>
-                    {PAIRS.map(p=><option key={p}>{p}</option>)}
-                  </select>
-                </div>
-
-                <div className="input-group">
-                  <label>⏱ Timeframe?</label>
-                  <div className="btn-row">
-                    {TIMEFRAMES.map(tf=>(
-                      <button key={tf.value} className={`toggle-btn ${timeframe===tf.value?"active":""}`}
-                        onClick={()=>setTimeframe(tf.value)}>{tf.label}</button>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="input-group">
-                  <label>🛡️ Your risk level?</label>
-                  <div className="btn-row">
-                    {(["safe","balanced","degen"] as RiskLevel[]).map(r=>(
-                      <button key={r} className={`toggle-btn ${risk===r?"active":""}`} onClick={()=>setRisk(r)}>
-                        {r==="safe"?"Safe 🛡️":r==="balanced"?"Balanced ⚖️":"Degen 🚀"}
+                  <div className="pair-pill-grid">
+                    {PAIR_DATA.map(p => (
+                      <button
+                        key={p.pair}
+                        className={`pair-pill ${pair === p.pair ? "selected" : ""}`}
+                        style={pair === p.pair ? {
+                          borderColor: "#00e676",
+                          background: "rgba(0,230,118,0.15)",
+                          color: "#fff",
+                          boxShadow: `0 0 10px rgba(0,230,118,0.3)`,
+                        } : {
+                          borderColor: `${p.color}40`,
+                          color: `${p.color}`,
+                        }}
+                        onClick={() => setPair(p.pair)}
+                      >
+                        <span className="pair-pill-emoji">{p.emoji}</span>
+                        <span>{p.pair.split("/")[0]}</span>
                       </button>
                     ))}
                   </div>
                 </div>
 
+                {/* #2 — Timeframe: solid fill on selected */}
+                <div className="input-group">
+                  <label>⏱ Timeframe?</label>
+                  <div className="btn-row">
+                    {TIMEFRAMES.map(tf => (
+                      <button key={tf.value}
+                        className={`toggle-btn ${timeframe===tf.value?"active":""}`}
+                        onClick={() => setTimeframe(tf.value)}>{tf.label}</button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* #3 — Risk buttons with distinct colors */}
+                <div className="input-group">
+                  <label>🛡️ Your risk level?</label>
+                  <div className="btn-row">
+                    {(["safe","balanced","degen"] as RiskLevel[]).map(r => (
+                      <button key={r}
+                        className={`toggle-btn risk-btn risk-${r} ${risk===r?"active":""}`}
+                        onClick={() => setRisk(r)}>
+                        {r==="safe"?"🐢 Safe":r==="balanced"?"⚖️ Balanced":"🚀 Degen"}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* #4 — Portfolio input + slider */}
                 <div className="input-group">
                   <label>💰 Portfolio size (USDC)?</label>
                   <div className="portfolio-row">
-                    <input type="number" min={10} max={1000000} value={portfolio}
-                      onChange={e=>setPortfolio(Number(e.target.value))}
+                    <input type="number" min={100} max={10000} step={50} value={portfolio}
+                      onChange={e => setPortfolio(Math.max(100, Math.min(10000, Number(e.target.value))))}
                       className="portfolio-input" />
                     <span className="portfolio-hint">USDC</span>
+                  </div>
+                  <div className="slider-row">
+                    <span className="slider-label">$100</span>
+                    <input
+                      type="range"
+                      min={100}
+                      max={10000}
+                      step={50}
+                      value={portfolio}
+                      onChange={e => setPortfolio(Number(e.target.value))}
+                      className="portfolio-slider"
+                    />
+                    <span className="slider-label">$10,000</span>
                   </div>
                 </div>
 
                 {error && <div className="error-banner">⚠️ {error}</div>}
 
-                <button className="cta-btn" onClick={()=>void handleAsk()}>🔮 Ask the Swarm</button>
+                {/* #5 — CTA button with glow/pulse */}
+                <button className="cta-btn" onClick={() => void handleAsk()}>🔮 Ask the Swarm</button>
                 <div className="divider-or">— or —</div>
                 <WalletButton variant="inline" />
                 <p className="brand-tagline">3 specialist AI agents · paid signal mesh · x402 protocol</p>
@@ -242,7 +309,7 @@ export default function App() {
                 <div className="brand-pulse">⚡ SIGNAL SWARM</div>
                 <div className="loading-pair">Analyzing {pair}</div>
                 <div className="loading-steps">
-                  {LOADING_STEPS.map((s,i)=>(
+                  {LOADING_STEPS.map((s,i) => (
                     <div key={i} className={`loading-step ${i<=loadingStep?"visible":""} ${i===loadingStep?"active":""}`}>{s}</div>
                   ))}
                 </div>
@@ -259,14 +326,20 @@ export default function App() {
                 <span className={`price-chg ${snapshot.market.changePct>=0?"green":"red"}`}>{snapshot.market.changePct>=0?"+":""}{snapshot.market.changePct.toFixed(2)}% today</span>
               </div>
 
-              {/* Verdict */}
+              {/* Verdict — #16 glow */}
               <div className="verdict-card">
-                <div className="verdict-action" style={{color:verdictColor(snapshot.consensus.action)}}>
+                <div
+                  className="verdict-action"
+                  style={{
+                    color: verdictColor(snapshot.consensus.action),
+                    textShadow: verdictGlow(snapshot.consensus.action),
+                  }}
+                >
                   {verdictEmoji(snapshot.consensus.action)} {snapshot.consensus.action}
                 </div>
                 <div className="verdict-conf">{Math.round(snapshot.consensus.finalScore*100)}% confidence</div>
                 <div className="verdict-summary">
-                  "{verdictSummary(snapshot.consensus.action, snapshot.agents.length, snapshot.consensus.alignedAgents.length)}"
+                  &quot;{verdictSummary(snapshot.consensus.action, snapshot.agents.length, snapshot.consensus.alignedAgents.length)}&quot;
                 </div>
                 {onchainTx && (
                   <a className="onchain-badge" href={`https://www.oklink.com/xlayer-test/tx/${onchainTx}`} target="_blank" rel="noreferrer">
@@ -275,27 +348,76 @@ export default function App() {
                 )}
               </div>
 
-              {/* Agent Cards */}
+              {/* Agent Cards — #6,7,8,9,15 */}
               <div className="section-label">WHAT EACH AGENT THINKS</div>
               <div className="agent-grid">
-                {snapshot.agents.filter(a=>a.agent!=="risk").map(a=>(
-                  <div key={a.id} className="agent-card">
-                    <div className="agent-header">
-                      <span>{agentMeta[a.agent]?.icon} {agentMeta[a.agent]?.label}</span>
-                      <span className="agent-verdict" style={{color:verdictColor(a.action)}}>{verdictEmoji(a.action)} {a.action}</span>
+                {snapshot.agents.filter(a=>a.agent!=="risk").map((a, i) => {
+                  const conf = Math.round(a.confidence * 100);
+                  const stripeColor = verdictStripe(a.action);
+                  const borderColor = verdictColor(a.action);
+                  return (
+                    <div
+                      key={a.id}
+                      className="agent-card"
+                      style={{
+                        borderColor: `${borderColor}55`,
+                        animationDelay: `${i * 150}ms`,
+                        borderLeft: `4px solid ${stripeColor}`,
+                      }}
+                    >
+                      {/* #7 — Header: big emoji + bold name + badge */}
+                      <div className="agent-card-header">
+                        <div className="agent-avatar">{agentMeta[a.agent]?.icon}</div>
+                        <div className="agent-name-col">
+                          <span className="agent-name">{agentMeta[a.agent]?.label}</span>
+                        </div>
+                        <span
+                          className="agent-verdict-badge"
+                          style={{
+                            background: verdictBg(a.action),
+                            color: verdictColor(a.action),
+                            border: `1px solid ${verdictColor(a.action)}55`,
+                          }}
+                        >
+                          {a.action}
+                        </span>
+                      </div>
+
+                      {/* #8 — Confidence bar */}
+                      <div className="agent-conf-bar-wrap">
+                        <div className="agent-conf-bar-track">
+                          <div
+                            className="agent-conf-bar-fill"
+                            style={{
+                              width: `${conf}%`,
+                              background: verdictColor(a.action),
+                            }}
+                          />
+                        </div>
+                        <span className="agent-conf-label">{conf}% confident</span>
+                      </div>
+
+                      <div className="agent-text">&quot;{agentToText(a.agent, a.reasons)}&quot;</div>
+
+                      {/* #9 — Receipt tag */}
+                      <div className="agent-receipt">
+                        💸 ${a.payment.amountUsd.toFixed(2)} USDC · {a.payment.id.slice(0, 18)}
+                      </div>
                     </div>
-                    <div className="agent-conf">{Math.round(a.confidence*100)}% sure</div>
-                    <div className="agent-text">"{agentToText(a.agent, a.reasons)}"</div>
-                    <div className="agent-paid">🏦 Paid ${a.payment.amountUsd.toFixed(2)} USDC</div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
 
-              {/* Risk Check */}
+              {/* #10 — Separator */}
+              <div className="section-separator" />
+
+              {/* Risk Check — #11 */}
               <div className="section-label">RISK CHECK</div>
               <div className="risk-row">
-                {riskChecks(snapshot.risk.flags).map(c=>(
-                  <span key={c.label} className={`risk-chip ${c.ok?"ok":"warn"}`}>{c.ok?"✅":"❌"} {c.label}</span>
+                {riskChecks(snapshot.risk.flags).map(c => (
+                  <span key={c.label} className={`risk-chip ${c.ok?"ok":"warn"}`}>
+                    {c.ok?"✅":"❌"} {c.label}
+                  </span>
                 ))}
               </div>
               {snapshot.risk.action==="BLOCK" && (
@@ -314,7 +436,7 @@ export default function App() {
                     <div className="pos-row"><span>Signal confidence</span><strong>{positionData.confidencePct}%</strong></div>
                     <div className="pos-divider"/>
                     <div className="pos-row highlight"><span>Suggested position</span><strong>${positionData.recommendedUsd.toFixed(2)} USDC</strong></div>
-                    <div className="pos-row sub"><span>That's {positionData.positionPct.toFixed(1)}% of your portfolio × confidence</span></div>
+                    <div className="pos-row sub"><span>That&apos;s {positionData.positionPct.toFixed(1)}% of your portfolio × confidence</span></div>
                     <div className="pos-divider"/>
                     <div className="pos-row green"><span>If {snapshot.consensus.action} hits target (+{positionData.takeProfitPct}%)</span><strong>+${positionData.maxGain.toFixed(2)}</strong></div>
                     <div className="pos-row red"><span>If it goes wrong (-{positionData.stopLossPct}%)</span><strong>-${positionData.maxLoss.toFixed(2)}</strong></div>
@@ -324,12 +446,12 @@ export default function App() {
               )}
 
               {/* x402 Receipt */}
-              <button className="receipt-toggle" onClick={()=>setReceiptOpen(o=>!o)}>
+              <button className="receipt-toggle" onClick={() => setReceiptOpen(o => !o)}>
                 🏦 How agents got paid {receiptOpen?"▲":"▼"}
               </button>
               {receiptOpen && (
                 <div className="receipt-table">
-                  {snapshot.receipts.map(r=>(
+                  {snapshot.receipts.map(r => (
                     <div key={r.id} className="receipt-row">
                       <span>{r.targetAgent} agent</span>
                       <span className="receipt-amt">${r.amountUsd.toFixed(2)} USDC</span>
@@ -347,8 +469,8 @@ export default function App() {
 
               {/* Action buttons */}
               <div className="action-row">
-                <button className="action-btn secondary" onClick={()=>{setPhase("landing");setSnapshot(null);}}>🔄 Analyze another pair</button>
-                <button className="action-btn primary" onClick={()=>{
+                <button className="action-btn secondary" onClick={() => {setPhase("landing");setSnapshot(null);}}>🔄 Analyze another pair</button>
+                <button className="action-btn primary" onClick={() => {
                   const conf = Math.round(snapshot.consensus.finalScore*100);
                   const agents = snapshot.agents.filter(a=>a.agent!=="risk").map(a=>`${agentMeta[a.agent]?.icon||""} ${a.agent}:${a.action}`).join(" ");
                   const tx = onchainTx.slice(0,10)+"...";
@@ -369,10 +491,10 @@ export default function App() {
               <p className="scanner-sub">Analyze up to 10 pairs simultaneously</p>
             </div>
             <div className="scanner-controls">
-              <select value={timeframe} onChange={e=>setTimeframe(e.target.value as Timeframe)} className="scanner-select">
-                {TIMEFRAMES.map(tf=><option key={tf.value} value={tf.value}>{tf.label}</option>)}
+              <select value={timeframe} onChange={e => setTimeframe(e.target.value as Timeframe)} className="scanner-select">
+                {TIMEFRAMES.map(tf => <option key={tf.value} value={tf.value}>{tf.label}</option>)}
               </select>
-              <button className="cta-btn scanner-btn" onClick={()=>void handleScan()} disabled={scanLoading}>
+              <button className="cta-btn scanner-btn" onClick={() => void handleScan()} disabled={scanLoading}>
                 {scanLoading ? "Scanning..." : "🚀 Scan All Pairs"}
               </button>
             </div>
@@ -391,7 +513,7 @@ export default function App() {
                 <span>#</span><span>PAIR</span><span>VERDICT</span><span>CONF</span><span>RISK</span><span>PRICE</span><span>CHANGE</span>
               </div>
               {scanResults.map((row, i) => (
-                <div key={row.pair} className="scanner-row" onClick={()=>{setPair(row.pair);setTab("analyze");setPhase("landing");}}>
+                <div key={row.pair} className="scanner-row" onClick={() => {setPair(row.pair);setTab("analyze");setPhase("landing");}}>
                   <span className="row-rank">{i+1}</span>
                   <span className="row-pair">{row.pair}</span>
                   <span className="row-verdict" style={{color:verdictColor(row.verdict)}}>{verdictEmoji(row.verdict)} {row.verdict}</span>
@@ -403,7 +525,7 @@ export default function App() {
               ))}
               <div className="scanner-best">
                 Best opportunity: <strong>{scanResults[0]?.pair}</strong> {verdictEmoji(scanResults[0]?.verdict??"")} &nbsp;
-                <button className="scanner-deep" onClick={()=>{setPair(scanResults[0]!.pair);setTab("analyze");setPhase("landing");}}>
+                <button className="scanner-deep" onClick={() => {setPair(scanResults[0]!.pair);setTab("analyze");setPhase("landing");}}>
                   Analyze {scanResults[0]?.pair} in depth →
                 </button>
               </div>
@@ -411,7 +533,7 @@ export default function App() {
           )}
 
           {!scanLoading && scanResults.length === 0 && (
-            <div className="scanner-empty">Click "Scan All Pairs" to analyze 10 markets simultaneously</div>
+            <div className="scanner-empty">Click &quot;Scan All Pairs&quot; to analyze 10 markets simultaneously</div>
           )}
         </div>
       )}
@@ -430,7 +552,7 @@ export default function App() {
             <>
               <div className="history-addr">
                 {address.slice(0,6)}...{address.slice(-4)} · X Layer Testnet
-                <button className="refresh-btn" onClick={()=>void handleLoadHistory(address)}>↻ Refresh</button>
+                <button className="refresh-btn" onClick={() => void handleLoadHistory(address)}>↻ Refresh</button>
               </div>
               {histLoading && <div className="scanner-loading"><div className="brand-pulse">⚡</div><div>Loading from chain...</div></div>}
               {!histLoading && history.length === 0 && (
