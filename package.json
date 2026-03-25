@@ -15,10 +15,13 @@
     "typecheck": "tsc -b --force --pretty false",
     "preview:dashboard": "npm run preview --workspace signal-swarm-dashboard"
   },
+  "dependencies": {
+    "ethers": "^6.16.0",
+    "tsx": "^4.20.5",
+    "typescript": "^5.8.3"
+  },
   "devDependencies": {
     "@types/node": "^22.15.3",
-    "tsx": "^4.20.5",
-    "typescript": "^5.8.3",
     "vitest": "^4.1.0"
   }
 }

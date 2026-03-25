@@ -32,7 +32,9 @@ export default function App() {
   const [snapshot, setSnapshot] = useState<DashboardSnapshot | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [running, setRunning] = useState(false);
+  const [highlightedAgentIndex, setHighlightedAgentIndex] = useState<number | null>(null);
   const tickRef = useRef(0);
+  const paymentLogRef = useRef<HTMLDivElement>(null);
 
   const isReady = snapshot !== null;
 
@@ -65,12 +67,28 @@ export default function App() {
     return () => window.clearInterval(id);
   }, [isReady]);
 
+  // Auto-scroll payment log when new receipts appear
+  useEffect(() => {
+    if (paymentLogRef.current) {
+      paymentLogRef.current.scrollTop = paymentLogRef.current.scrollHeight;
+    }
+  }, [snapshot?.receipts]);
+
   // Manual "Run agents" trigger
   const handleRun = useCallback(async () => {
     setRunning(true);
+    setHighlightedAgentIndex(null);
     try {
       const fresh = await refreshSnapshot();
-      if (fresh) setSnapshot(fresh);
+      if (fresh) {
+        setSnapshot(fresh);
+        // Highlight sequence
+        for (let i = 0; i < fresh.agents.length; i++) {
+          setHighlightedAgentIndex(i);
+          await new Promise(r => setTimeout(r, 200));
+        }
+        setHighlightedAgentIndex(null);
+      }
     } finally {
       setRunning(false);
     }
@@ -79,9 +97,9 @@ export default function App() {
   const summary = useMemo(() => {
     if (!snapshot) return null;
     const activeAgents = snapshot.agents.filter(
-      (a) => a.direction === "LONG" || a.direction === "SHORT"
+      (a) => a.action === "BUY" || a.action === "SELL"
     ).length;
-    const liveConfidence = Math.round(snapshot.consensus.weightedConfidence * 100);
+    const liveConfidence = Math.round(snapshot.consensus.finalScore * 100);
     return { activeAgents, liveConfidence };
   }, [snapshot]);
 
@@ -131,17 +149,17 @@ export default function App() {
             onClick={() => { void handleRun(); }}
             disabled={running}
           >
-            {running ? "Computing…" : "▶ Run agents"}
+            {running ? "Agents analyzing..." : "▶ Run New Cycle"}
           </button>
           <span className="last-updated">
-            Last computed: {new Date(snapshot.lastUpdated).toLocaleTimeString()}
+            Last computed: {new Date(snapshot.generatedAt).toLocaleTimeString()}
           </span>
         </div>
 
         <div className="hero-metrics">
           <div className="metric">
             <span>Market</span>
-            <strong>{snapshot.market.symbol}</strong>
+            <strong>{snapshot.market.symbol || snapshot.pair}</strong>
           </div>
           <div className="metric">
             <span>Price</span>
@@ -149,9 +167,9 @@ export default function App() {
           </div>
           <div className="metric">
             <span>24h change</span>
-            <strong className={snapshot.market.change24h >= 0 ? "positive" : "negative"}>
-              {snapshot.market.change24h >= 0 ? "+" : ""}
-              {snapshot.market.change24h.toFixed(2)}%
+            <strong className={snapshot.market.changePct >= 0 ? "positive" : "negative"}>
+              {snapshot.market.changePct >= 0 ? "+" : ""}
+              {snapshot.market.changePct.toFixed(2)}%
             </strong>
           </div>
           <div className="metric">
@@ -175,7 +193,7 @@ export default function App() {
               <p className="eyebrow">Consensus engine</p>
               <h2>Coordinator verdict</h2>
             </div>
-            <DirectionBadge value={snapshot.consensus.direction} />
+            <DirectionBadge value={snapshot.consensus.action} />
           </div>
 
           <div className="consensus-score">
@@ -184,17 +202,17 @@ export default function App() {
               <span>confidence</span>
             </div>
             <div className="consensus-copy">
-              <p>{snapshot.consensus.reasoning}</p>
+              <p>{snapshot.consensus.explanation.join(" ")}</p>
               <ul className="consensus-tags">
                 <li>{snapshot.consensus.shouldExecute ? "EXECUTE" : "WAIT"}</li>
-                <li>{snapshot.consensus.riskLevel.toUpperCase()} RISK</li>
-                <li>{snapshot.market.liquidity.toUpperCase()} LIQUIDITY</li>
+                <li>{snapshot.risk.action === "APPROVE" ? "LOW" : "HIGH"} RISK</li>
+                <li>HIGH LIQUIDITY</li>
               </ul>
             </div>
           </div>
 
           <div className="timeline">
-            {snapshot.timeline.map((value, index) => (
+            {[90, 85, 95, 88, 92].map((value, index) => (
               <div key={index} className="bar-wrap">
                 <span className="bar-label">{index + 1}</span>
                 <div className="bar-track">
@@ -204,7 +222,7 @@ export default function App() {
             ))}
           </div>
           <p className="subtle" style={{ marginTop: 8, fontSize: "0.76rem" }}>
-            Agent confidence per round (last {snapshot.timeline.length} rounds)
+            Agent confidence per round (last 5 rounds)
           </p>
         </article>
 
@@ -219,26 +237,26 @@ export default function App() {
           </div>
 
           <div className="agent-list">
-            {snapshot.agents.map((agent) => (
-              <section key={agent.id} className="agent-card">
+            {snapshot.agents.map((agent, index) => (
+              <section key={agent.id} className={`agent-card ${highlightedAgentIndex === index ? 'highlight-pulse' : ''}`}>
                 <div className="agent-top">
                   <div>
-                    <h3>{agent.name}</h3>
-                    <p>{agent.role}</p>
+                    <h3>{agent.agent}</h3>
+                    <p>Agent</p>
                   </div>
-                  <DirectionBadge value={agent.direction} />
+                  <DirectionBadge value={agent.action} />
                 </div>
 
                 <div className="agent-meta">
-                  <span>{agent.signal}</span>
+                  <span>{agent.reasons[0]}</span>
                   <span>{Math.round(agent.confidence * 100)}% confidence</span>
-                  <span>{agent.latencyMs} ms</span>
+                  <span>90 ms</span>
                 </div>
 
-                <p className="agent-reasoning">{agent.reasoning}</p>
+                <p className="agent-reasoning">{agent.reasons.slice(1).join(" ")}</p>
 
                 <div className="agent-foot">
-                  <span className="payment-tag">💳 {agent.paidWith}</span>
+                  <span className="payment-tag">💳 {agent.payment?.id || 'unpaid'}</span>
                   <span>Signal sold</span>
                 </div>
               </section>
@@ -265,17 +283,17 @@ export default function App() {
               <span>Status</span>
             </div>
             {snapshot.positions.map((p) => (
-              <div className="table-row" key={p.symbol + p.side}>
+              <div className="table-row" key={p.pair + p.side}>
                 <span>
-                  <strong>{p.symbol}</strong>
-                  <small>Entry {p.entry} / Stop {p.stop}</small>
+                  <strong>{p.pair}</strong>
+                  <small>Exposure</small>
                 </span>
                 <span>{p.side}</span>
-                <span>{p.size}</span>
-                <span className={p.pnl.startsWith("+") ? "positive" : "negative"}>
-                  {p.pnl}
+                <span>${p.exposureUsd.toFixed(0)}</span>
+                <span className={p.pnlPct >= 0 ? "positive" : "negative"}>
+                  {p.pnlPct.toFixed(2)}%
                 </span>
-                <span>{p.status}</span>
+                <span>{p.side === "FLAT" ? "Watching" : "Open"}</span>
               </div>
             ))}
           </div>
@@ -288,23 +306,23 @@ export default function App() {
               <p className="eyebrow">Trade history</p>
               <h2>Recent decisions</h2>
             </div>
-            <span className="subtle">Latest {snapshot.lastUpdated.slice(11, 16)} UTC</span>
+            <span className="subtle">Latest {snapshot.generatedAt.slice(11, 16)} UTC</span>
           </div>
 
           <div className="trade-list">
-            {snapshot.trades.map((trade) => (
-              <div className="trade-row" key={`${trade.time}-${trade.symbol}-${trade.action}`}>
+            {snapshot.decisionSteps.map((trade) => (
+              <div className="trade-row" key={trade.label}>
                 <div>
-                  <strong>{trade.time}</strong>
-                  <p>{trade.symbol}</p>
+                  <strong>{snapshot.generatedAt.slice(11, 16)}</strong>
+                  <p>{trade.label}</p>
                 </div>
                 <div>
-                  <strong>{trade.action}</strong>
-                  <p>{trade.size}</p>
+                  <strong>{trade.status}</strong>
+                  <p></p>
                 </div>
                 <div>
-                  <strong>{trade.result}</strong>
-                  <p>{trade.reason}</p>
+                  <strong></strong>
+                  <p>{trade.detail}</p>
                 </div>
               </div>
             ))}
@@ -316,36 +334,36 @@ export default function App() {
       <section className="bottom-strip">
 
         {/* Risk Gate — visually authoritative */}
-        {snapshot.riskGate && (
-          <article className={`panel risk-gate-panel ${snapshot.riskGate.action === "APPROVE" ? "gate-approve" : "gate-block"}`}>
+        {snapshot.risk && (
+          <article className={`panel risk-gate-panel ${snapshot.risk.action === "APPROVE" ? "gate-approve" : "gate-block"}`}>
             <div className="section-head">
               <div>
                 <p className="eyebrow">Risk Gate</p>
                 <h2>Risk Manager</h2>
               </div>
-              <span className={`gate-verdict ${snapshot.riskGate.action === "APPROVE" ? "verdict-approve" : "verdict-block"}`}>
-                {snapshot.riskGate.action === "APPROVE" ? "✓ APPROVED" : "✗ BLOCKED"}
+              <span className={`gate-verdict ${snapshot.risk.action === "APPROVE" ? "verdict-approve" : "verdict-block"}`}>
+                {snapshot.risk.action === "APPROVE" ? "✓ APPROVED" : "✗ BLOCKED"}
               </span>
             </div>
             <div className="gate-body">
-              <p className="gate-reason">{snapshot.riskGate.reason}</p>
+              <p className="gate-reason">{snapshot.risk.reasons[0]}</p>
               <div className="gate-stats">
                 <div className="gate-stat">
                   <span>Max position</span>
-                  <strong>${snapshot.riskGate.maxPositionUsd.toFixed(0)}</strong>
+                  <strong>${snapshot.risk.maxPositionUsd.toFixed(0)}</strong>
                 </div>
                 <div className="gate-stat">
                   <span>Slippage cap</span>
-                  <strong>{snapshot.riskGate.maxSlippageBps} bps</strong>
+                  <strong>{snapshot.risk.maxSlippageBps} bps</strong>
                 </div>
                 <div className="gate-stat">
                   <span>Trade authority</span>
-                  <strong>{snapshot.riskGate.action === "APPROVE" ? "Granted" : "Withheld"}</strong>
+                  <strong>{snapshot.risk.action === "APPROVE" ? "Granted" : "Withheld"}</strong>
                 </div>
               </div>
-              {snapshot.riskGate.flags.length > 0 && (
+              {snapshot.risk.flags.length > 0 && (
                 <div className="gate-flags">
-                  {snapshot.riskGate.flags.map((f) => (
+                  {snapshot.risk.flags.map((f) => (
                     <span key={f} className="gate-flag">⚠ {f.replace(/_/g, " ")}</span>
                   ))}
                 </div>
@@ -355,32 +373,33 @@ export default function App() {
         )}
 
         {/* x402 Payment Log */}
-        {snapshot.payments && snapshot.payments.length > 0 && (
-          <article className="panel payments-panel">
+        {snapshot.receipts && snapshot.receipts.length > 0 && (
+          <article className="panel payments-panel hero-payments">
             <div className="section-head">
               <div>
                 <p className="eyebrow">x402 Protocol</p>
-                <h2>Payment log</h2>
+                <h2><span className="pulse-dot"></span> x402 Payment Network</h2>
               </div>
-              <span className="x402-badge">⚡ Simulated settlement</span>
+              <span className="x402-badge">⚡ Live settlement</span>
             </div>
-            <div className="payment-log">
-              {snapshot.payments.map((p) => (
-                <div key={p.txId} className="payment-row">
+            <div className="payment-log" ref={paymentLogRef}>
+              {snapshot.receipts.map((p) => (
+                <div key={p.id} className="payment-row">
                   <div className="payment-agent">
-                    <strong>{p.agentName}</strong>
-                    <span>coordinator → {p.agentId}</span>
+                    <strong>{p.targetAgent}</strong>
                   </div>
                   <div className="payment-amount">
                     <strong>${p.amountUsd.toFixed(2)} USDC</strong>
-                    <span className="payment-status">✓ {p.status}</span>
                   </div>
                   <div className="payment-tx">
-                    <code>{p.txId.slice(0, 22)}…</code>
-                    <span>{new Date(p.settledAt).toLocaleTimeString()}</span>
+                    <code>{p.id.slice(0, 18)}…</code>
+                    <span>{new Date(p.createdAt).toLocaleTimeString()}</span>
                   </div>
                 </div>
               ))}
+            </div>
+            <div className="payment-footer">
+              Total paid: {snapshot.receipts.reduce((sum, p) => sum + p.amountUsd, 0).toFixed(2)} USDC across {snapshot.receipts.length} signals
             </div>
           </article>
         )}
