@@ -1,6 +1,6 @@
 import type { DashboardSnapshot } from "../types";
 
-const API_URL = "http://localhost:4000";
+const API_URL = "http://localhost:3001";
 const MOCK_PATH = "/mock-data.json";
 
 // ─── Analyze a single pair ────────────────────────────────────────────────────
