@@ -11,7 +11,7 @@ import type {
 } from "../../shared/src/types.js";
 import { Coordinator } from "@signal-swarm/agents";
 import { recordSignalOnchain } from "./onchain-recorder.js";
-import { payAgent, AGENT_WALLETS } from "./x402-client.js";
+import { payAgent, getAgentWallets } from "./x402-client.js";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 const AGENT_COSTS: Record<AgentId, number> = {
@@ -86,10 +86,13 @@ export async function buildSnapshot(
 
   const { snapshot, signals, consensus, risk, execution, payments } = result;
 
-  // --- Real x402 payments for enabled agents ---
-  const paymentResults = await Promise.all(
-    signals.map((s) => payAgent(AGENT_WALLETS[s.agentId] ?? "0x0", AGENT_COSTS[s.agentId] ?? 1, s.agentId))
-  );
+  // --- Real x402 payments for enabled agents (sequential to avoid nonce collision) ---
+  const agentWallets = getAgentWallets();
+  const paymentResults: Awaited<ReturnType<typeof payAgent>>[] = [];
+  for (const s of signals) {
+    const result = await payAgent(agentWallets[s.agentId] ?? "0x0", AGENT_COSTS[s.agentId] ?? 1, s.agentId);
+    paymentResults.push(result);
+  }
 
   // --- Map specialist agent signals ---
   const agentSignals: DashboardSignal[] = signals.map((s, i) => ({
@@ -123,7 +126,7 @@ export async function buildSnapshot(
       targetAgent: s.agentId,
       amountUsd: AGENT_COSTS[s.agentId] ?? 1,
       currency: "USDC",
-      status: "simulated",
+      status: paymentResults[i]?.real ? "confirmed" : "simulated",
       createdAt: new Date(s.createdAt).toISOString(),
     },
   }));
