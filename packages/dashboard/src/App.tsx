@@ -2,10 +2,11 @@ import { useCallback, useState } from "react";
 import type { DashboardSnapshot } from "./types";
 import { analyzeSymbol, scanPairs, getHistory } from "./lib/mockApi";
 import WalletButton from "./components/WalletButton";
+import LoadingTransition from "./components/LoadingTransition";
 import { useAccount } from "wagmi";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
-type Phase = "landing" | "loading" | "results";
+type Phase = "landing" | "loading" | "transitioning" | "results";
 type AppTab = "analyze" | "scanner" | "history";
 type RiskLevel = "safe" | "balanced" | "degen";
 type Timeframe = "15m" | "1h" | "4h" | "1d";
@@ -131,6 +132,11 @@ export default function App() {
   const [histLoading, setHistLoading] = useState(false);
 
   // ─── Analyze flow handlers ─────────────────────────────────────────────────
+  // Holds fetched data while LoadingTransition plays
+  const [pendingSnapshot, setPendingSnapshot] = useState<DashboardSnapshot | null>(null);
+  const [pendingPosition, setPendingPosition] = useState<PositionSuggestion | null>(null);
+  const [pendingTx, setPendingTx] = useState<string>("");
+
   const handleAsk = useCallback(async () => {
     setPhase("loading");
     setError("");
@@ -146,17 +152,28 @@ export default function App() {
     try {
       const data = await analyzeSymbol(pair, timeframe, risk, portfolio, isConnected ? address : undefined);
       clearInterval(iv);
-      setSnapshot(data);
       const anyData = data as unknown as Record<string, unknown>;
-      setPosition((anyData.positionSuggestion as PositionSuggestion | null) ?? calcPositionFallback(portfolio, risk, data.consensus.finalScore));
-      setOnchainTx((anyData.onchainProofTx as string) ?? data.executionProof.txHash);
-      setPhase("results");
+      // Store results and show transition screen
+      setPendingSnapshot(data);
+      setPendingPosition((anyData.positionSuggestion as PositionSuggestion | null) ?? calcPositionFallback(portfolio, risk, data.consensus.finalScore));
+      setPendingTx((anyData.onchainProofTx as string) ?? data.executionProof.txHash);
+      setPhase("transitioning");
     } catch (e: unknown) {
       clearInterval(iv);
       setError(e instanceof Error ? e.message : "Analysis failed");
       setPhase("landing");
     }
   }, [pair, timeframe, risk, portfolio, address, isConnected]);
+
+  // Called by LoadingTransition when 3.5s animation finishes
+  const handleTransitionDone = useCallback(() => {
+    if (pendingSnapshot) {
+      setSnapshot(pendingSnapshot);
+      setPosition(pendingPosition);
+      setOnchainTx(pendingTx);
+      setPhase("results");
+    }
+  }, [pendingSnapshot, pendingPosition, pendingTx]);
 
   // ─── Scanner handler ───────────────────────────────────────────────────────
   const handleScan = useCallback(async () => {
@@ -190,7 +207,7 @@ export default function App() {
   return (
     <div className="app-root">
       {/* Nav */}
-      {(phase !== "loading") && (
+      {(phase !== "loading" && phase !== "transitioning") && (
         <nav className="top-nav">
           <div className="brand-inline">⚡ SIGNAL SWARM</div>
           <div className="nav-tabs">
@@ -302,19 +319,20 @@ export default function App() {
             </div>
           )}
 
-          {/* LOADING */}
+
+          {/* LOADING — show minimal spinner while API call runs */}
           {phase === "loading" && (
             <div className="screen-center">
               <div className="loading-card">
                 <div className="brand-pulse">⚡ SIGNAL SWARM</div>
-                <div className="loading-pair">Analyzing {pair}</div>
-                <div className="loading-steps">
-                  {LOADING_STEPS.map((s,i) => (
-                    <div key={i} className={`loading-step ${i<=loadingStep?"visible":""} ${i===loadingStep?"active":""}`}>{s}</div>
-                  ))}
-                </div>
+                <div className="loading-pair">Contacting agents...</div>
               </div>
             </div>
+          )}
+
+          {/* TRANSITIONING — fullscreen 3D animation */}
+          {phase === "transitioning" && (
+            <LoadingTransition pair={pair} onDone={handleTransitionDone} />
           )}
 
           {/* RESULTS */}
@@ -362,7 +380,6 @@ export default function App() {
                       style={{
                         borderColor: `${borderColor}55`,
                         animationDelay: `${i * 150}ms`,
-                        borderLeft: `4px solid ${stripeColor}`,
                       }}
                     >
                       {/* #7 — Header: big emoji + bold name + badge */}
