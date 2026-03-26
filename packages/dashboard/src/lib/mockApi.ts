@@ -94,6 +94,31 @@ export async function getHistory(address: string): Promise<HistoryEntry[]> {
   return [];
 }
 
+// ─── Trade Journal API ────────────────────────────────────────────────────────
+export async function openJournalTrade(payload: {
+  pair: string; side: "BUY" | "SELL"; entryPrice: number; positionSize: number; confidence: number; notes: string; userPrivateKey: string;
+}) {
+  const res = await fetch(`${API_URL}/api/journal/open`, {
+    method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload)
+  });
+  if (!res.ok) throw new Error(await res.text());
+  return res.json();
+}
+
+export async function closeJournalTrade(payload: { tradeId: number; exitPrice: number; userPrivateKey: string; }) {
+  const res = await fetch(`${API_URL}/api/journal/close`, {
+    method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload)
+  });
+  if (!res.ok) throw new Error(await res.text());
+  return res.json();
+}
+
+export async function getJournal(address: string) {
+  const res = await fetch(`${API_URL}/api/journal/${address}`);
+  if (!res.ok) throw new Error(await res.text());
+  return res.json();
+}
+
 // ─── Mock fallback for scanner (when orchestrator is down) ─────────────────────
 function mockScanFallback(pairs: string[]): ScanResult[] {
   const verdicts: ("BUY"|"SELL"|"HOLD")[] = ["BUY","SELL","HOLD","BUY","HOLD","SELL","BUY","HOLD","SELL","BUY"];
