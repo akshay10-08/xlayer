@@ -39,7 +39,11 @@ function compile(name, source) {
   const input = {
     language: "Solidity",
     sources: { [`${name}.sol`]: { content: source } },
-    settings: { outputSelection: { "*": { "*": ["abi", "evm.bytecode.object"] } } },
+    settings: {
+      optimizer: { enabled: true, runs: 200 },
+      viaIR: true,
+      outputSelection: { "*": { "*": ["abi", "evm.bytecode.object"] } } 
+    },
   };
   const raw = JSON.parse(solc.compile(JSON.stringify(input)));
   const errors = (raw.errors ?? []).filter(e => e.severity === "error");
@@ -95,8 +99,12 @@ async function main() {
   console.log("🔨 Compiling contracts...");
   const usdcSrc  = fs.readFileSync(path.join(contractsDir, "MockUSDC.sol"), "utf8");
   const regSrc   = fs.readFileSync(path.join(contractsDir, "SignalRegistry.sol"), "utf8");
+  const journalSrc = fs.readFileSync(path.join(contractsDir, "TradeJournal.sol"), "utf8");
+  const portfolioSrc = fs.readFileSync(path.join(contractsDir, "PortfolioReport.sol"), "utf8");
   const usdc     = compile("MockUSDC", usdcSrc);
   const registry = compile("SignalRegistry", regSrc);
+  const journal  = compile("TradeJournal", journalSrc);
+  const portfolio = compile("PortfolioReport", portfolioSrc);
   console.log("✅ Compilation successful\n");
 
   // ─── Deploy MockUSDC ──────────────────────────────────────────────────────
@@ -119,6 +127,26 @@ async function main() {
   console.log(`✅ SignalRegistry     : ${regAddress}`);
   console.log(`   TX: https://www.oklink.com/xlayer-test/tx/${regDeployTx}\n`);
 
+  // ─── Deploy TradeJournal ────────────────────────────────────────────────
+  console.log("🚀 Deploying TradeJournal...");
+  const journalFactory  = new ethers.ContractFactory(journal.abi, journal.bytecode, deployer);
+  const journalContract = await journalFactory.deploy();
+  await journalContract.waitForDeployment();
+  const journalAddress  = await journalContract.getAddress();
+  const journalDeployTx = journalContract.deploymentTransaction()?.hash ?? "";
+  console.log(`✅ TradeJournal       : ${journalAddress}`);
+  console.log(`   TX: https://www.oklink.com/xlayer-test/tx/${journalDeployTx}\n`);
+
+  // ─── Deploy PortfolioReport ────────────────────────────────────────────────
+  console.log("🚀 Deploying PortfolioReport...");
+  const portfolioFactory  = new ethers.ContractFactory(portfolio.abi, portfolio.bytecode, deployer);
+  const portfolioContract = await portfolioFactory.deploy();
+  await portfolioContract.waitForDeployment();
+  const portfolioAddress  = await portfolioContract.getAddress();
+  const portfolioDeployTx = portfolioContract.deploymentTransaction()?.hash ?? "";
+  console.log(`✅ PortfolioReport    : ${portfolioAddress}`);
+  console.log(`   TX: https://www.oklink.com/xlayer-test/tx/${portfolioDeployTx}\n`);
+
   // ─── Mint 500 USDC to coordinator ────────────────────────────────────────
   console.log("💸 Minting 500 USDC to coordinator...");
   const usdcAbi = ["function mint(address to, uint256 amount)", "function balanceOf(address) view returns (uint256)"];
@@ -136,6 +164,8 @@ async function main() {
     "# ── Deployed by deploy-contracts.mjs ──────────────────",
     `XLAYER_USDC_ADDRESS=${usdcAddress}`,
     `SIGNAL_REGISTRY_ADDRESS=${regAddress}`,
+    `TRADE_JOURNAL_ADDRESS=${journalAddress}`,
+    `PORTFOLIO_REPORT_ADDRESS=${portfolioAddress}`,
     `TECHNICAL_AGENT_WALLET=${agents.technical}`,
     `WHALE_AGENT_WALLET=${agents.whale}`,
     `SENTIMENT_AGENT_WALLET=${agents.sentiment}`,

@@ -2,6 +2,12 @@ import cors from "cors";
 import express from "express";
 import { buildSnapshot, scanPairs, SCANNER_PAIRS, type AnalyzeParams } from "./engine.js";
 import { getSignalHistory } from "./onchain-recorder.js";
+import { openTradeOnchain, closeTradeOnchain, getUserJournal } from "./journal-service.js";
+import { analyzePortfolio } from "./portfolio-analyzer.js";
+import { getUserPortfolioReports } from "./portfolio-recorder.js";
+
+// ─── In-memory job queue ─────────────────────────────────────────────────────
+const jobs = new Map<string, { status: "pending" | "done" | "error"; result?: unknown; error?: string }>();
 
 const app = express();
 const port = Number(process.env.PORT ?? 4000);
@@ -64,6 +70,70 @@ app.get("/api/history/:address", (req, res) => {
     return;
   }
   void getSignalHistory(address).then((data) => res.json({ address, history: data }));
+});
+
+// ─── Journal ──────────────────────────────────────────────────────────────────
+app.post("/api/journal/open", async (req, res) => {
+  try {
+    const result = await openTradeOnchain(req.body);
+    res.json({ ...result, explorerUrl: `https://www.oklink.com/xlayer-test/tx/${result.txHash}` });
+  } catch (error: any) {
+    console.error("Failed to open trade:", error);
+    res.status(500).json({ error: error?.message || "Internal Server Error" });
+  }
+});
+
+app.post("/api/journal/close", async (req, res) => {
+  try {
+    const result = await closeTradeOnchain(req.body);
+    res.json({ ...result, explorerUrl: `https://www.oklink.com/xlayer-test/tx/${result.txHash}` });
+  } catch (error: any) {
+    console.error("Failed to close trade:", error);
+    res.status(500).json({ error: error?.message || "Internal Server Error" });
+  }
+});
+
+app.get("/api/journal/:address", async (req, res) => {
+  try {
+    const result = await getUserJournal(req.params.address);
+    res.json(result);
+  } catch (error: any) {
+    console.error("Failed to get user journal:", error);
+    res.status(500).json({ error: error?.message || "Internal Server Error" });
+  }
+});
+
+// ─── Portfolio Analysis (async job queue) ────────────────────────────────
+app.post("/api/portfolio/analyze", async (req, res) => {
+  const { walletAddress, riskProfile = "moderate" } = req.body as { walletAddress: string; riskProfile?: string };
+  if (!walletAddress) {
+    res.status(400).json({ error: "walletAddress is required" });
+    return;
+  }
+  const jobId = Date.now().toString();
+  jobs.set(jobId, { status: "pending" });
+  res.json({ jobId, message: "Analysis started. Poll /api/portfolio/status/:jobId for results." });
+
+  // Run in background
+  analyzePortfolio(walletAddress, riskProfile as "safe" | "moderate" | "degen")
+    .then(result => jobs.set(jobId, { status: "done", result }))
+    .catch(err => jobs.set(jobId, { status: "error", error: (err as Error).message }));
+});
+
+app.get("/api/portfolio/status/:jobId", (req, res) => {
+  const job = jobs.get(req.params.jobId);
+  if (!job) { res.status(404).json({ error: "Job not found" }); return; }
+  res.json(job);
+});
+
+app.get("/api/portfolio/history/:address", async (req, res) => {
+  try {
+    const reports = await getUserPortfolioReports(req.params.address);
+    res.json({ address: req.params.address, reports });
+  } catch (error: any) {
+    console.error("Failed to get portfolio history:", error);
+    res.status(500).json({ error: error?.message || "Internal Server Error" });
+  }
 });
 
 // ─── GET /api/scanner-pairs — list supported pairs ────────────────────────────

@@ -4,10 +4,12 @@ import { analyzeSymbol, scanPairs, getHistory } from "./lib/mockApi";
 import WalletButton from "./components/WalletButton";
 import LoadingTransition from "./components/LoadingTransition";
 import { useAccount } from "wagmi";
+import { TakeTradeModal } from "./components/TakeTradeModal";
+import { PortfolioTab } from "./components/PortfolioTab";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 type Phase = "landing" | "loading" | "transitioning" | "results";
-type AppTab = "analyze" | "scanner" | "history";
+type AppTab = "analyze" | "scanner" | "history" | "portfolio";
 type RiskLevel = "safe" | "balanced" | "degen";
 type Timeframe = "15m" | "1h" | "4h" | "1d";
 
@@ -121,6 +123,7 @@ export default function App() {
   const [loadingStep, setLoadingStep]= useState(0);
   const [receiptOpen, setReceiptOpen]= useState(false);
   const [error, setError]            = useState<string>("");
+  const [showTakeTrade, setShowTakeTrade] = useState(false);
 
   // ─── Scanner ───────────────────────────────────────────────────────────────
   const [scanResults, setScanResults]       = useState<ScanRow[]>([]);
@@ -142,6 +145,7 @@ export default function App() {
     setError("");
     setLoadingStep(0);
     setReceiptOpen(false);
+    setShowTakeTrade(false);
 
     let step = 0;
     const iv = setInterval(() => {
@@ -172,6 +176,7 @@ export default function App() {
       setPosition(pendingPosition);
       setOnchainTx(pendingTx);
       setPhase("results");
+      setShowTakeTrade(true);
     }
   }, [pendingSnapshot, pendingPosition, pendingTx]);
 
@@ -211,10 +216,10 @@ export default function App() {
         <nav className="top-nav">
           <div className="brand-inline">⚡ SIGNAL SWARM</div>
           <div className="nav-tabs">
-            {(["analyze","scanner","history"] as AppTab[]).map(t => (
+            {(["analyze","scanner","history","portfolio"] as AppTab[]).map(t => (
               <button key={t} className={`nav-tab ${tab===t?"active":""}`}
                 onClick={() => { setTab(t); if(t==="analyze") setPhase("landing"); if(t==="history"&&isConnected&&address) void handleLoadHistory(address); }}>
-                {t==="analyze"?"🔮 Analyze":t==="scanner"?"🔭 Scanner":"📜 My Signals"}
+                {t==="analyze"?"🔮 Analyze":t==="scanner"?"🔭 Scanner":t==="history"?"📒 Journal":"🗂️ Portfolio"}
               </button>
             ))}
           </div>
@@ -369,7 +374,7 @@ export default function App() {
               {/* Agent Cards — #6,7,8,9,15 */}
               <div className="section-label">WHAT EACH AGENT THINKS</div>
               <div className="agent-grid">
-                {snapshot.agents.filter(a=>a.agent!=="risk").map((a, i) => {
+                {snapshot.agents.filter((a: any)=>a.agent!=="risk").map((a: any, i: number) => {
                   const conf = Math.round(a.confidence * 100);
                   const stripeColor = verdictStripe(a.action);
                   const borderColor = verdictColor(a.action);
@@ -468,7 +473,7 @@ export default function App() {
               </button>
               {receiptOpen && (
                 <div className="receipt-table">
-                  {snapshot.receipts.map(r => (
+                  {snapshot.receipts.map((r: any) => (
                     <div key={r.id} className="receipt-row">
                       <span>{r.targetAgent} agent</span>
                       <span className="receipt-amt">${r.amountUsd.toFixed(2)} USDC</span>
@@ -476,7 +481,7 @@ export default function App() {
                     </div>
                   ))}
                   <div className="receipt-total">
-                    Total: ${snapshot.receipts.reduce((s,r)=>s+r.amountUsd,0).toFixed(2)} USDC across {snapshot.receipts.length} signals
+                    Total: ${snapshot.receipts.reduce((s: number, r: any) => s + r.amountUsd, 0).toFixed(2)} USDC across {snapshot.receipts.length} signals
                   </div>
                   <a className="explorer-link" href={snapshot.executionProof.explorerUrl} target="_blank" rel="noreferrer">
                     🔗 View execution on OKLink ↗
@@ -489,11 +494,21 @@ export default function App() {
                 <button className="action-btn secondary" onClick={() => {setPhase("landing");setSnapshot(null);}}>🔄 Analyze another pair</button>
                 <button className="action-btn primary" onClick={() => {
                   const conf = Math.round(snapshot.consensus.finalScore*100);
-                  const agents = snapshot.agents.filter(a=>a.agent!=="risk").map(a=>`${agentMeta[a.agent]?.icon||""} ${a.agent}:${a.action}`).join(" ");
+                  const agents = snapshot.agents.filter((a: any)=>a.agent!=="risk").map((a: any)=>`${agentMeta[a.agent]?.icon||""} ${a.agent}:${a.action}`).join(" ");
                   const tx = onchainTx.slice(0,10)+"...";
                   window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(`⚡ SIGNAL SWARM just analyzed ${snapshot.pair}\n\n${verdictEmoji(snapshot.consensus.action)} ${snapshot.consensus.action} · ${conf}% confidence\n\n${agents}\n\nVerified onchain: ${tx}\n#XLayer #SignalSwarm #DeFi @OKX`)}`, "_blank");
                 }}>📤 Share this signal</button>
               </div>
+              
+              {showTakeTrade && (
+                <div style={{marginTop: "2rem"}}>
+                  <TakeTradeModal 
+                    snapshot={snapshot}
+                    positionSize={positionData?.recommendedUsd || 100}
+                    onSkip={() => setShowTakeTrade(false)}
+                  />
+                </div>
+              )}
             </div>
           )}
         </>
@@ -590,6 +605,13 @@ export default function App() {
               ))}
             </>
           )}
+        </div>
+      )}
+
+      {/* ── PORTFOLIO TAB ──────────────────────────────────────────────────── */}
+      {tab === "portfolio" && (
+        <div className="tab-pane">
+          <PortfolioTab address={address} isConnected={isConnected} />
         </div>
       )}
     </div>

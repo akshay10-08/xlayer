@@ -1265,3 +1265,479 @@ button, input, select { font: inherit; }
   .position-card { padding: 14px 16px; }
   .agent-grid { grid-template-columns: 1fr; }
 }
+
+/* ═══════════════════════════════════════════════════════════════
+   PORTFOLIO INTELLIGENCE UI
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ─── Tab Pane wrapper ─────────────────────────────────────── */
+.tab-pane {
+  max-width: 860px;
+  margin: 0 auto;
+  padding: 24px 24px 60px;
+  width: 100%;
+}
+
+/* ─── Entry Card ────────────────────────────────────────────── */
+.portfolio-entry-card {
+  background: rgba(8,13,28,0.88);
+  border: 1px solid rgba(0,230,118,0.18);
+  border-radius: 24px;
+  padding: 40px 36px;
+  max-width: 520px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  box-shadow: 0 0 60px rgba(0,230,118,0.07), 0 24px 80px rgba(0,0,0,0.4);
+  backdrop-filter: blur(18px);
+}
+.portfolio-entry-icon { font-size: 3rem; text-align: center; }
+.portfolio-entry-title {
+  margin: 0;
+  font-size: 1.8rem;
+  font-weight: 800;
+  text-align: center;
+  background: linear-gradient(135deg, #00e676, #6cffbf);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+.portfolio-entry-sub {
+  margin: 0;
+  color: rgba(215,225,245,0.75);
+  font-size: 1rem;
+  text-align: center;
+  line-height: 1.6;
+}
+.portfolio-feature-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  border-left: 3px solid rgba(0,230,118,0.3);
+  padding-left: 16px;
+  margin: 4px 0;
+}
+.portfolio-feature {
+  font-size: 0.95rem;
+  color: rgba(210,225,245,0.85);
+}
+.portfolio-entry-proof {
+  margin: 0;
+  font-size: 0.82rem;
+  color: rgba(170,195,230,0.45);
+  text-align: center;
+}
+.wallet-address-pill {
+  font-size: 0.82rem;
+  color: #00e676;
+  font-family: monospace;
+  text-align: center;
+  margin: 0;
+}
+
+/* ─── Risk Button Row ───────────────────────────────────────── */
+.risk-btn-row {
+  display: flex;
+  gap: 8px;
+}
+.risk-btn {
+  flex: 1;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid rgba(255,255,255,0.1);
+  background: rgba(255,255,255,0.04);
+  color: rgba(220,230,248,0.75);
+  font-size: 0.88rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.risk-btn:hover { border-color: rgba(0,230,118,0.3); }
+.risk-btn.active {
+  border-color: #00e676;
+  background: rgba(0,230,118,0.12);
+  color: #00e676;
+  box-shadow: 0 0 12px rgba(0,230,118,0.2);
+}
+
+/* ─── Loading Screen ────────────────────────────────────────── */
+.portfolio-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 24px;
+  min-height: 60vh;
+}
+.portfolio-loading-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+  max-width: 440px;
+}
+.loading-step {
+  padding: 12px 18px;
+  border-radius: 12px;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.06);
+  font-size: 0.92rem;
+  color: rgba(210,225,248,0.5);
+  transition: all 0.4s ease;
+}
+.loading-step.active {
+  border-color: rgba(0,230,118,0.35);
+  background: rgba(0,230,118,0.06);
+  color: #00e676;
+  box-shadow: 0 0 12px rgba(0,230,118,0.1);
+}
+.loading-step.done {
+  border-color: rgba(0,230,118,0.15);
+  color: rgba(108,255,190,0.7);
+}
+.loading-step.pending { opacity: 0.35; }
+
+/* ─── Results Page ─────────────────────────────────────────── */
+.portfolio-results {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  animation: fadeSlideIn 0.4s ease forwards;
+}
+
+/* ─── Health Card ────────────────────────────────────────────── */
+.portfolio-health-card {
+  background: rgba(8,13,28,0.88);
+  border: 1px solid;
+  border-radius: 20px;
+  padding: 28px 32px;
+  backdrop-filter: blur(18px);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.portfolio-health-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+.portfolio-total-value {
+  font-size: 1.8rem;
+  font-weight: 800;
+  color: #fff;
+}
+.portfolio-health-badge {
+  padding: 8px 16px;
+  border-radius: 999px;
+  border: 1px solid;
+  font-size: 0.85rem;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  white-space: nowrap;
+}
+.health-bar-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.health-bar-track {
+  flex: 1;
+  height: 8px;
+  background: rgba(255,255,255,0.08);
+  border-radius: 999px;
+  overflow: hidden;
+}
+.health-bar-fill {
+  height: 100%;
+  border-radius: 999px;
+  transition: width 1s ease;
+}
+.health-bar-label {
+  font-size: 0.82rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.portfolio-summary-text {
+  margin: 0;
+  font-size: 0.95rem;
+  color: rgba(210,225,248,0.82);
+  font-style: italic;
+  line-height: 1.6;
+}
+.portfolio-meta-row {
+  font-size: 0.82rem;
+  color: rgba(180,200,235,0.55);
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+/* ─── Token Cards ────────────────────────────────────────────── */
+.portfolio-token-list {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.portfolio-token-card {
+  background: rgba(8,13,28,0.85);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 18px;
+  padding: 22px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  transition: box-shadow 0.2s;
+  animation: fadeSlideIn 0.4s ease forwards;
+}
+.portfolio-token-card:hover {
+  box-shadow: 0 4px 24px rgba(0,0,0,0.3);
+}
+.token-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.token-card-name {
+  display: flex;
+  align-items: baseline;
+  gap: 2px;
+}
+.token-symbol {
+  font-size: 1.2rem;
+  font-weight: 800;
+  color: #fff;
+}
+.token-pair {
+  font-size: 0.88rem;
+  color: rgba(200,215,240,0.5);
+  font-weight: 600;
+}
+.token-verdict-badge {
+  padding: 5px 14px;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+}
+.token-balance-line {
+  font-size: 0.88rem;
+  color: rgba(200,218,245,0.7);
+}
+.portfolio-weight-bar {
+  height: 5px;
+  background: rgba(255,255,255,0.07);
+  border-radius: 999px;
+  overflow: hidden;
+}
+.portfolio-weight-fill {
+  height: 100%;
+  border-radius: 999px;
+  transition: width 0.8s ease;
+}
+.token-reasoning {
+  margin: 0;
+  font-size: 0.88rem;
+  color: rgba(215,225,248,0.82);
+  font-style: italic;
+  line-height: 1.6;
+}
+.token-agents-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  background: rgba(255,255,255,0.03);
+  border-radius: 10px;
+  padding: 10px 14px;
+}
+.token-agent-row {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  font-size: 0.82rem;
+}
+.token-agent-row > span:first-child {
+  flex-shrink: 0;
+  width: 90px;
+  color: rgba(200,215,240,0.7);
+  font-weight: 600;
+}
+.agent-summary {
+  color: rgba(180,200,235,0.65);
+  line-height: 1.4;
+}
+.token-x402-line {
+  font-size: 0.8rem;
+  color: rgba(170,195,230,0.5);
+}
+.token-confidence {
+  color: rgba(0,230,118,0.7);
+  font-weight: 600;
+}
+
+/* ─── Action Summary Card ────────────────────────────────────── */
+.portfolio-action-card {
+  background: rgba(8,13,28,0.82);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 18px;
+  padding: 22px 24px;
+}
+.action-group { margin-bottom: 14px; }
+.action-group:last-child { margin-bottom: 0; }
+.action-group-header {
+  font-size: 0.85rem;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  margin-bottom: 6px;
+}
+.action-item {
+  font-size: 0.85rem;
+  color: rgba(205,220,245,0.75);
+  padding-left: 12px;
+  line-height: 1.5;
+}
+
+/* ─── Past Reports ───────────────────────────────────────────── */
+.portfolio-past-reports {
+  background: rgba(8,13,28,0.7);
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 14px;
+  padding: 18px 20px;
+}
+.past-report-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 0.82rem;
+  color: rgba(180,200,235,0.6);
+  padding: 6px 0;
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+}
+.past-report-row:last-child { border-bottom: none; }
+
+/* ─── Util: full-width ──────────────────────────────────────── */
+.full-width { width: 100%; }
+.subtext-center {
+  text-align: center;
+  font-size: 0.8rem;
+  color: rgba(170,190,225,0.45);
+  margin: 0;
+  line-height: 1.6;
+}
+.error-banner {
+  padding: 12px 16px;
+  background: rgba(255,82,82,0.1);
+  border: 1px solid rgba(255,82,82,0.25);
+  border-radius: 12px;
+  color: #ff8c97;
+  font-size: 0.88rem;
+}
+.input-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 0.88rem;
+  color: rgba(210,225,245,0.75);
+}
+.portfolio-input {
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 12px;
+  color: #fff;
+  padding: 10px 14px;
+  font-size: 0.95rem;
+  transition: border-color 0.2s;
+}
+.portfolio-input:focus { outline: none; border-color: rgba(0,230,118,0.4); }
+
+/* ─── Trade Modal Overlay ────────────────────────────────────── */
+.trade-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.55);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  z-index: 200;
+  padding: 0 16px 24px;
+  backdrop-filter: blur(4px);
+  animation: fadeSlideIn 0.3s ease;
+}
+.trade-modal-card {
+  background: rgba(6,12,26,0.98);
+  border: 1px solid rgba(0,230,118,0.25);
+  border-radius: 24px;
+  padding: 28px 28px 24px;
+  width: 100%;
+  max-width: 480px;
+  box-shadow: 0 0 60px rgba(0,230,118,0.1), 0 40px 80px rgba(0,0,0,0.5);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.trade-signal-summary {
+  padding: 10px 14px;
+  background: rgba(255,255,255,0.05);
+  border-radius: 10px;
+  font-size: 0.9rem;
+  color: rgba(210,228,248,0.88);
+  font-weight: 600;
+}
+.success-card { border-color: rgba(0,230,118,0.4); text-align: center; }
+.success-card h3 { color: #00e676; }
+
+/* ─── Orbital Rig for portfolio loading ────────────────────── */
+.orbital-rig {
+  position: relative;
+  width: 120px;
+  height: 120px;
+}
+.orbit-ring {
+  position: absolute;
+  inset: 0;
+  border: 2px solid rgba(0,230,118,0.18);
+  border-radius: 50%;
+  animation: spinOrbit 3s linear infinite;
+}
+.orbit-dot {
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  background: #00e676;
+  border-radius: 50%;
+  box-shadow: 0 0 8px #00e676;
+  top: 50%;
+  left: 50%;
+  transform-origin: 0 0;
+  animation: orbitDot 3s linear infinite;
+}
+.orbit-dot.d1 { animation-delay: 0s; transform: rotate(0deg) translateX(55px); }
+.orbit-dot.d2 { animation-delay: -1s; transform: rotate(120deg) translateX(55px); }
+.orbit-dot.d3 { animation-delay: -2s; transform: rotate(240deg) translateX(55px); }
+.core-pulse {
+  position: absolute;
+  top: 50%; left: 50%;
+  width: 28px; height: 28px;
+  transform: translate(-50%,-50%);
+  background: radial-gradient(circle, rgba(0,230,118,0.7), rgba(0,230,118,0.1));
+  border-radius: 50%;
+  animation: pulse 2s ease-in-out infinite;
+}
+@keyframes spinOrbit { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+@keyframes orbitDot {
+  from { transform: rotate(calc(var(--start,0deg))) translateX(55px); }
+  to { transform: rotate(calc(var(--start,0deg) + 360deg)) translateX(55px); }
+}
+@keyframes pulse {
+  0%,100% { transform: translate(-50%,-50%) scale(1); opacity: 0.8; }
+  50% { transform: translate(-50%,-50%) scale(1.3); opacity: 1; }
+}
+
+@media (max-width: 600px) {
+  .portfolio-entry-card { padding: 28px 20px; }
+  .portfolio-health-card { padding: 20px 18px; }
+  .portfolio-token-card { padding: 18px 16px; }
+  .tab-pane { padding: 16px 12px 60px; }
+  .portfolio-health-top { flex-direction: column; gap: 10px; }
+}
