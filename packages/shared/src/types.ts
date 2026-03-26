@@ -96,7 +96,7 @@ export interface PaymentReceipt {
   targetAgent: AgentId;
   amountUsd: number;
   currency: "USDC";
-  status: "simulated";
+  status: "simulated" | "confirmed";
   createdAt: string;
 }
 

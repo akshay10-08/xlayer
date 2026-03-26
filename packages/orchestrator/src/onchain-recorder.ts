@@ -4,6 +4,12 @@
  * When COORDINATOR_KEY + SIGNAL_REGISTRY_ADDRESS are set, recording is REAL.
  * Otherwise returns a simulation receipt.
  */
+import * as dotenv from "dotenv";
+import path from "path";
+import { fileURLToPath } from "url";
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+dotenv.config({ path: path.resolve(__dirname, "../../../.env") });
+
 import { ethers } from "ethers";
 
 const XLAYER_TESTNET_RPC = process.env.XLAYER_TESTNET_RPC ?? "https://testrpc.xlayer.tech";
