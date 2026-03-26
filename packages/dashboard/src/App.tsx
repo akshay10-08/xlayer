@@ -109,7 +109,7 @@ export default function App() {
   const { address, isConnected } = useAccount();
 
   // ─── Top-level tab ─────────────────────────────────────────────────────────
-  const [tab, setTab] = useState<AppTab>("analyze");
+  const [tab, setTab] = useState<AppTab>("portfolio");
 
   // ─── Analyze flow ──────────────────────────────────────────────────────────
   const [phase, setPhase]            = useState<Phase>("landing");
@@ -214,12 +214,12 @@ export default function App() {
       {/* Nav */}
       {(phase !== "loading" && phase !== "transitioning") && (
         <nav className="top-nav">
-          <div className="brand-inline">⚡ SIGNAL SWARM</div>
+          <div className="brand-inline">⚡ ABSOLUT</div>
           <div className="nav-tabs">
-            {(["analyze","scanner","history","portfolio"] as AppTab[]).map(t => (
+            {(["portfolio","analyze","scanner","history"] as AppTab[]).map(t => (
               <button key={t} className={`nav-tab ${tab===t?"active":""}`}
                 onClick={() => { setTab(t); if(t==="analyze") setPhase("landing"); if(t==="history"&&isConnected&&address) void handleLoadHistory(address); }}>
-                {t==="analyze"?"🔮 Analyze":t==="scanner"?"🔭 Scanner":t==="history"?"📒 Journal":"🗂️ Portfolio"}
+                {t==="portfolio"?"🗂️ Portfolio":t==="analyze"?"🔮 Analyze":t==="scanner"?"🔭 Scanner":"📒 Journal"}
               </button>
             ))}
           </div>
@@ -234,8 +234,8 @@ export default function App() {
           {phase === "landing" && (
             <div className="screen-center">
               <div className="landing-card">
-                <div className="brand-hero">⚡ SIGNAL SWARM</div>
-                <div className="brand-sub">Ask our AI agents what to trade</div>
+                <div className="brand-hero">⚡ ABSOLUT</div>
+                <div className="brand-sub">No noise. No doubt. ABSOLUT conviction.</div>
 
                 {/* #1 — Pair selector: pill grid */}
                 <div className="input-group">
@@ -329,7 +329,7 @@ export default function App() {
           {phase === "loading" && (
             <div className="screen-center">
               <div className="loading-card">
-                <div className="brand-pulse">⚡ SIGNAL SWARM</div>
+                <div className="brand-pulse">⚡ ABSOLUT</div>
                 <div className="loading-pair">Contacting agents...</div>
               </div>
             </div>
@@ -496,7 +496,7 @@ export default function App() {
                   const conf = Math.round(snapshot.consensus.finalScore*100);
                   const agents = snapshot.agents.filter((a: any)=>a.agent!=="risk").map((a: any)=>`${agentMeta[a.agent]?.icon||""} ${a.agent}:${a.action}`).join(" ");
                   const tx = onchainTx.slice(0,10)+"...";
-                  window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(`⚡ SIGNAL SWARM just analyzed ${snapshot.pair}\n\n${verdictEmoji(snapshot.consensus.action)} ${snapshot.consensus.action} · ${conf}% confidence\n\n${agents}\n\nVerified onchain: ${tx}\n#XLayer #SignalSwarm #DeFi @OKX`)}`, "_blank");
+                  window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(`⚡ ABSOLUT just analyzed ${snapshot.pair}\n\n${verdictEmoji(snapshot.consensus.action)} ${snapshot.consensus.action} · ${conf}% confidence\n\n${agents}\n\nVerified onchain: ${tx}\n#XLayer #ABSOLUT #DeFi @OKX`)}`, "_blank");
                 }}>📤 Share this signal</button>
               </div>
               

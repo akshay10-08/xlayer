@@ -1,5 +1,5 @@
 {
-  "name": "@signal-swarm/orchestrator",
+  "name": "@absolut/orchestrator",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -10,8 +10,8 @@
     "start": "tsx src/server.ts"
   },
   "dependencies": {
-    "@signal-swarm/agents": "0.1.0",
-    "@signal-swarm/shared": "0.1.0",
+    "@absolut/agents": "0.1.0",
+    "@absolut/shared": "0.1.0",
     "cors": "^2.8.6",
     "dotenv": "^17.3.1",
     "ethers": "^6.16.0",

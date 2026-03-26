@@ -12,7 +12,7 @@ export default function LandingHero({ onGetStarted }: { onGetStarted: () => void
       </div>
 
       <nav className="landing-nav">
-        <div className="nav-logo">SIGNAL SWARM</div>
+        <div className="nav-logo">⚡ ABSOLUT</div>
         <div className="nav-links">
           <a href="#">Home</a>
           <a href="#">Resources</a>

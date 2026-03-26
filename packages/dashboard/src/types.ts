@@ -1,1 +1,1 @@
-export * from "@signal-swarm/shared";
+export * from "@absolut/shared";

@@ -17,6 +17,8 @@ interface TokenReport {
 }
 
 interface PortfolioAnalysis {
+  empty?: boolean;
+  message?: string;
   walletAddress: string;
   totalValueUSDC: number;
   overallHealth: number;
@@ -147,7 +149,7 @@ export function PortfolioTab({
     const adds  = r.tokens.filter(t => t.verdict === "ADD").map(t => `🟢 ADD: ${t.symbol}`).join("\n");
     const lines = [sells, holds, adds].filter(Boolean).join("\n");
     return encodeURIComponent(
-      `Just ran an AI portfolio analysis on @SignalSwarm ⚡\n\n` +
+      `Just ran an AI portfolio analysis on @ABSOLUT ⚡\n\n` +
       `Portfolio health: ${r.overallHealth}/100 ${r.overallHealth >= 70 ? "⚡ STRONG" : r.overallHealth >= 45 ? "⚠️ CAUTION" : "🔴 DANGER"}\n\n` +
       `${r.tokens.length} tokens analyzed by AI agents:\n${lines}\n\n` +
       `All verdicts recorded onchain on X Layer 🔗\n#XLayer #AITrading #DeFi #x402`
@@ -238,6 +240,32 @@ export function PortfolioTab({
 
   // ─── RESULTS SCREEN ──────────────────────────────────────────────────────────
   if (phase === "results" && result) {
+    if (result.empty) {
+      return (
+        <div className="portfolio-entry-card" style={{ textAlign: "center", padding: "48px 36px" }}>
+          <div className="portfolio-entry-icon" style={{ fontSize: "3.5rem", marginBottom: "16px" }}>🪹</div>
+          <h2 className="portfolio-entry-title" style={{ fontSize: "1.5rem" }}>Nothing to analyze yet</h2>
+          <p className="portfolio-entry-sub" style={{ margin: "16px 0 24px" }}>
+            Your wallet has no tokens on <br /> X Layer Testnet.
+          </p>
+          <div style={{ background: "rgba(255,255,255,0.03)", padding: "16px", borderRadius: "12px", marginBottom: "24px" }}>
+            <p style={{ margin: 0, fontSize: "0.9rem", color: "rgba(215,225,245,0.8)", marginBottom: "12px" }}>
+              Get testnet OKB from the faucet:
+            </p>
+            <a href="https://web3.okx.com/xlayer/faucet" target="_blank" rel="noreferrer" className="wallet-address-pill" style={{ display: "inline-block", padding: "6px 12px", background: "rgba(0,230,118,0.1)", borderRadius: "6px", textDecoration: "none" }}>
+              web3.okx.com/xlayer/faucet
+            </a>
+          </div>
+          <a href="https://web3.okx.com/xlayer/faucet" target="_blank" rel="noreferrer" className="cta-btn full-width" style={{ textDecoration: "none", display: "inline-block" }}>
+            Get Testnet OKB →
+          </a>
+          <button className="action-btn secondary" style={{ marginTop: "16px", width: "100%" }} onClick={() => setPhase("entry")}>
+            Try Another Wallet
+          </button>
+        </div>
+      );
+    }
+
     const hColor = healthColor(result.overallHealth);
     const sells = result.tokens.filter(t => t.verdict === "SELL");
     const adds  = result.tokens.filter(t => t.verdict === "ADD");
@@ -289,7 +317,6 @@ export function PortfolioTab({
               <div
                 key={token.symbol}
                 className="portfolio-token-card"
-                style={{ borderLeft: `4px solid ${badge.color}` }}
               >
                 <div className="token-card-header">
                   <div className="token-card-name">

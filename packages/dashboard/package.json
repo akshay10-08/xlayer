@@ -1,5 +1,5 @@
 {
-  "name": "signal-swarm-dashboard",
+  "name": "absolut-dashboard",
   "private": true,
   "version": "0.1.0",
   "type": "module",
@@ -10,7 +10,7 @@
   },
   "dependencies": {
     "@rainbow-me/rainbowkit": "^2.2.10",
-    "@signal-swarm/shared": "^0.1.0",
+    "@absolut/shared": "^0.1.0",
     "@tanstack/react-query": "^5.91.3",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
