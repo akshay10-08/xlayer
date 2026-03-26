@@ -61,6 +61,7 @@ export async function analyzePortfolio(
     riskProfile: "safe" | "moderate" | "degen" = "moderate"
 ): Promise<PortfolioAnalysis> {
 
+    console.log("Analyzing wallet:", walletAddress);
     console.log(`\n📊 Analyzing portfolio for ${walletAddress}...`);
 
     // Step 1: Get live prices
@@ -71,10 +72,13 @@ export async function analyzePortfolio(
     const walletTokens: WalletToken[] = await readWalletTokens(walletAddress, prices);
 
     if (walletTokens.length === 0) {
-        throw new Error(
-            "No analyzable tokens found in this wallet. " +
-            "Make sure you have ETH, OKB, or other supported tokens with at least $0.50 value."
-        );
+        return {
+            empty: true,
+            message: "No tokens with value found in this wallet on X Layer Testnet.",
+            walletAddress,
+            tokens: [],
+            totalValueUSDC: 0
+        } as any;
     }
 
     const totalValue = walletTokens.reduce((sum, t) => sum + t.estimatedValueUSDC, 0);

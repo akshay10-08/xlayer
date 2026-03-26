@@ -9,7 +9,7 @@ import type {
   DashboardSignal,
   TradeIntent,
 } from "../../shared/src/types.js";
-import { Coordinator } from "@signal-swarm/agents";
+import { Coordinator } from "@absolut/agents";
 import { recordSignalOnchain } from "./onchain-recorder.js";
 import { payAgent, getAgentWallets } from "./x402-client.js";
 

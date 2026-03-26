@@ -11,10 +11,9 @@ const KNOWN_TOKENS: Record<string, {
     decimals: number;
     okxPair: string | null;
 }> = {
-    "ETH":  { address: "native",                                    symbol: "ETH",  decimals: 18, okxPair: "ETH/USDC" },
-    "OKB":  { address: "native_okb",                                symbol: "OKB",  decimals: 18, okxPair: "OKB/USDC" },
+    "OKB":  { address: "native",                                    symbol: "OKB",  decimals: 18, okxPair: "OKB/USDC" },
     "USDC": { address: process.env.XLAYER_USDC_ADDRESS ?? "",       symbol: "USDC", decimals: 6,  okxPair: null },
-    "WETH": { address: "0xbec7859bc3d0603bec454f7194173e36bf2aa5c8", symbol: "WETH", decimals: 18, okxPair: "ETH/USDC" },
+    "ETH":  { address: "0xbec7859bc3d0603bec454f7194173e36bf2aa5c8", symbol: "ETH",  decimals: 18, okxPair: "ETH/USDC" },
 };
 
 const ERC20_ABI = [
@@ -43,9 +42,9 @@ export async function readWalletTokens(
 
         let rawBalance = BigInt(0);
         try {
-            if (info.address === "native" || info.address === "native_okb") {
+            if (info.address === "native") {
                 rawBalance = await provider.getBalance(walletAddress);
-            } else {
+            } else if (info.address) {
                 const contract = new ethers.Contract(info.address, ERC20_ABI, provider) as any;
                 rawBalance = await contract.balanceOf(walletAddress) as bigint;
             }

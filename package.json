@@ -1,19 +1,19 @@
 {
-  "name": "signal-swarm",
+  "name": "absolut",
   "private": true,
   "type": "module",
   "workspaces": [
     "packages/*"
   ],
   "scripts": {
-    "build": "npm run build --workspace @signal-swarm/shared && npm run build --workspace @signal-swarm/agents && npm run build --workspace @signal-swarm/orchestrator && npm run build --workspace signal-swarm-dashboard",
+    "build": "npm run build --workspace @absolut/shared && npm run build --workspace @absolut/agents && npm run build --workspace @absolut/orchestrator && npm run build --workspace absolut-dashboard",
     "demo": "tsx packages/agents/src/cli.ts ETH/USDC",
     "dev": "tsx packages/agents/src/cli.ts",
-    "dev:dashboard": "npm run dev --workspace signal-swarm-dashboard",
-    "dev:orchestrator": "npm run dev --workspace @signal-swarm/orchestrator",
-    "test": "npm run test --workspace @signal-swarm/shared && npm run test --workspace @signal-swarm/agents && npm run test --workspace @signal-swarm/orchestrator",
+    "dev:dashboard": "npm run dev --workspace absolut-dashboard",
+    "dev:orchestrator": "npm run dev --workspace @absolut/orchestrator",
+    "test": "npm run test --workspace @absolut/shared && npm run test --workspace @absolut/agents && npm run test --workspace @absolut/orchestrator",
     "typecheck": "tsc -b --force --pretty false",
-    "preview:dashboard": "npm run preview --workspace signal-swarm-dashboard",
+    "preview:dashboard": "npm run preview --workspace absolut-dashboard",
     "compile:contract": "npx tsx scripts/compile-contract.ts",
     "deploy:registry": "npx tsx scripts/deploy-registry.ts",
     "gen:wallets": "npx tsx scripts/gen-wallets.ts"

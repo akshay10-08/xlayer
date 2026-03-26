@@ -19,7 +19,7 @@ app.use(express.json());
 app.get("/api/health", (_req, res) => {
   res.json({
     ok: true,
-    service: "signal-swarm-orchestrator",
+    service: "absolut-orchestrator",
     generatedAt: new Date().toISOString(),
     onchainEnabled: !!(process.env.COORDINATOR_KEY && process.env.SIGNAL_REGISTRY_ADDRESS),
     x402Enabled: !!(process.env.COORDINATOR_KEY && process.env.XLAYER_USDC_ADDRESS),
@@ -143,7 +143,7 @@ app.get("/api/scanner-pairs", (_req, res) => {
 
 app.listen(port, () => {
   console.log(`╔══════════════════════════════════════╗`);
-  console.log(`║   Signal Swarm Orchestrator v2       ║`);
+  console.log(`║   ABSOLUT Orchestrator v2       ║`);
   console.log(`║   http://localhost:${port}              ║`);
   console.log(`╚══════════════════════════════════════╝`);
   console.log(`Onchain recording: ${process.env.COORDINATOR_KEY ? "✅ REAL" : "🔵 simulated"}`);
