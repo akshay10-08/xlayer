@@ -1,0 +1,174 @@
+/* ─── Root: fullscreen black overlay ─────────────────── */
+.lt-root {
+  position: fixed;
+  inset: 0;
+  background: #000;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 48px;
+  opacity: 1;
+  transition: opacity 0.3s ease;
+  overflow: hidden;
+}
+.lt-fadeout {
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* ─── Particles ─────────────────────────────────────── */
+.lt-particles {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.lt-particle {
+  position: absolute;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.15);
+  animation: particleDrift linear infinite;
+}
+@keyframes particleDrift {
+  from { transform: translateY(0); opacity: 0.15; }
+  50%  { opacity: 0.25; }
+  to   { transform: translateY(-60px); opacity: 0; }
+}
+
+/* ─── 3D Scene ──────────────────────────────────────── */
+.lt-scene {
+  position: relative;
+  width: 240px;
+  height: 240px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.lt-perspective {
+  position: relative;
+  width: 240px;
+  height: 240px;
+  perspective: 600px;
+  transform-style: preserve-3d;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ─── Central glowing orb ──────────────────────────── */
+.lt-orb {
+  position: absolute;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, #80ffcc, #00ff88 60%, #00cc66);
+  box-shadow:
+    0 0 20px rgba(0, 255, 136, 0.8),
+    0 0 50px rgba(0, 255, 136, 0.4),
+    0 0 90px rgba(0, 255, 136, 0.2);
+  z-index: 10;
+  animation: orbPulse 1.2s ease-in-out infinite;
+}
+@keyframes orbPulse {
+  0%, 100% { transform: scale(1.0); box-shadow: 0 0 20px rgba(0,255,136,0.8), 0 0 50px rgba(0,255,136,0.4), 0 0 90px rgba(0,255,136,0.2); }
+  50%       { transform: scale(1.15); box-shadow: 0 0 30px rgba(0,255,136,1.0), 0 0 70px rgba(0,255,136,0.6), 0 0 120px rgba(0,255,136,0.3); }
+}
+
+/* ─── Orbit wrappers ─────────────────────────────────── */
+.lt-orbit-wrapper {
+  position: absolute;
+  width: 0;
+  height: 0;
+  top: 50%;
+  left: 50%;
+  transform-style: preserve-3d;
+  animation: orbit linear infinite;
+}
+@keyframes orbit {
+  from { transform: rotateY(0deg); }
+  to   { transform: rotateY(360deg); }
+}
+
+/* ─── Agent dots ─────────────────────────────────────── */
+.lt-dot-container {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  transform-style: preserve-3d;
+  /* translateZ applied inline per agent */
+}
+.lt-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #00ff88;
+  box-shadow: 0 0 8px rgba(0,255,136,0.9), 0 0 18px rgba(0,255,136,0.4);
+}
+.lt-dot-label {
+  font-family: "SFMono-Regular", "Consolas", monospace;
+  font-size: 9px;
+  color: rgba(0, 255, 136, 0.5);
+  white-space: nowrap;
+  letter-spacing: 0.04em;
+  /* backface visibility so label always faces camera */
+  transform: rotateY(0deg);
+}
+
+/* ─── Connection lines ──────────────────────────────── */
+.lt-line-wrapper {
+  animation-direction: normal;
+}
+.lt-connection-line {
+  position: absolute;
+  height: 1px;
+  background: linear-gradient(to right, rgba(0,255,136,0.7), rgba(0,255,136,0.1));
+  transform-origin: left center;
+  top: 0;
+  left: 0;
+  animation: linePulse 1.8s ease-in-out infinite;
+}
+@keyframes linePulse {
+  0%, 100% { opacity: 0.3; }
+  50%       { opacity: 0.8; }
+}
+
+/* ─── Text messages ──────────────────────────────────── */
+.lt-messages {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  min-height: 120px;
+}
+.lt-msg {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-family: "Space Grotesk", sans-serif;
+  font-size: 0.95rem;
+  color: rgba(255, 255, 255, 0.75);
+  opacity: 0;
+  transform: translateY(6px);
+  transition: opacity 0.4s ease, transform 0.4s ease;
+}
+.lt-msg.lt-msg-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+.lt-msg.lt-msg-green {
+  color: #00ff88;
+  font-weight: 700;
+}
+.lt-msg-icon {
+  font-size: 1.1rem;
+}
+
+/* ─── Mobile scale-down ──────────────────────────────── */
+@media (max-width: 480px) {
+  .lt-scene { transform: scale(0.6); }
+  .lt-messages { transform: scale(0.85); }
+}
