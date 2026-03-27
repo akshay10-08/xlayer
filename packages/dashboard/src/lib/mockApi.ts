@@ -9,13 +9,14 @@ export async function analyzeSymbol(
   timeframe = "15m",
   riskProfile = "moderate",
   portfolioUSDC = 1000,
-  userAddress?: string
+  userAddress?: string,
+  customAgentIds: number[] = []
 ): Promise<DashboardSnapshot> {
   try {
     const res = await fetch(`${API_URL}/api/analyze`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ pair: symbol, timeframe, riskProfile, portfolioUSDC, userAddress }),
+      body: JSON.stringify({ pair: symbol, timeframe, riskProfile, portfolioUSDC, userAddress, customAgentIds }),
       cache: "no-store",
     });
     if (res.ok) return (await res.json()) as DashboardSnapshot;
@@ -137,4 +138,62 @@ export function driftPrice(snapshot: DashboardSnapshot, tick: number): Dashboard
   const price = Number((snapshot.market.price * (1 + drift)).toFixed(4));
   const changePct = Number((snapshot.market.changePct + Math.sin(tick / 6) * 0.2).toFixed(2));
   return { ...snapshot, generatedAt: new Date().toISOString(), market: { ...snapshot.market, price, changePct } };
+}
+
+// ─── Agent Marketplace API ───────────────────────────────────────────────────
+
+export interface AgentInfo {
+  id: number;
+  owner: string;
+  agentWallet: string;
+  name: string;
+  description: string;
+  agentType: number;
+  agentTypeLabel: string;
+  status: number;
+  signalPrice: number;
+  totalHires: number;
+  totalEarned: number;
+  accuracy: number;
+  strategy: string;
+  registeredAt: string;
+  lastActiveAt: string;
+}
+
+export async function getMarketplaceAgents(): Promise<AgentInfo[]> {
+  try {
+    const res = await fetch(`${API_URL}/api/marketplace/agents`);
+    if (res.ok) {
+      const json = await res.json() as { agents: AgentInfo[] };
+      return json.agents ?? [];
+    }
+  } catch {
+    console.warn("Failed to fetch marketplace agents.");
+  }
+  return [];
+}
+
+export async function getMyAgents(address: string): Promise<AgentInfo[]> {
+  if (!address) return [];
+  try {
+    const res = await fetch(`${API_URL}/api/marketplace/my-agents/${address}`);
+    if (res.ok) {
+      const json = await res.json() as { agents: AgentInfo[] };
+      return json.agents ?? [];
+    }
+  } catch {
+    console.warn("Failed to fetch my agents.");
+  }
+  return [];
+}
+
+export async function registerCustomAgent(payload: {
+  name: string; description: string; strategy: string;
+  agentType: number; signalPriceUSDC: number; ownerPrivateKey: string;
+}): Promise<{ agentId: number; txHash: string; explorerUrl: string; agentWalletPrivateKey: string; message: string }> {
+  const res = await fetch(`${API_URL}/api/marketplace/register`, {
+    method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload)
+  });
+  if (!res.ok) throw new Error(await res.text());
+  return res.json();
 }
