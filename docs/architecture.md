@@ -2,7 +2,7 @@
 
 ## Goal
 
-Signal Swarm is a collaborative agent system that turns market context into trade decisions through a coordinator-led workflow. The MVP is designed to run safely with mock services first, while preserving clean seams for live OKX and X Layer integrations later.
+ABSOLUT is a collaborative agent system that turns market context into trade decisions through a coordinator-led workflow. The MVP is designed to run safely with mock services first, while preserving clean seams for live OKX and X Layer integrations later.
 
 ## Core actors
 

@@ -11,7 +11,7 @@ This project is designed to work in mock mode first. Treat every variable below 
 ## Mock-first defaults
 
 - `USE_MOCKS=true`: enables local fixtures and simulated services
-- `MOCK_DATA_SEED=signal-swarm-demo`: keeps demo outputs stable
+- `MOCK_DATA_SEED=absolut-demo`: keeps demo outputs stable
 - `MOCK_EXECUTION=true`: logs execution instead of submitting real trades
 - `MOCK_PAYMENTS=true`: simulates x402 payment receipts
 
@@ -43,7 +43,7 @@ NODE_ENV=development
 APP_ENV=local
 LOG_LEVEL=debug
 USE_MOCKS=true
-MOCK_DATA_SEED=signal-swarm-demo
+MOCK_DATA_SEED=absolut-demo
 MOCK_EXECUTION=true
 MOCK_PAYMENTS=true
 ```

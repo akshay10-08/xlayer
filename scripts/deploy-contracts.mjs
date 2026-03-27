@@ -57,7 +57,7 @@ const contractsDir = path.resolve(__dirname, "../contracts");
 
 async function main() {
   console.log("\n─────────────────────────────────────────────");
-  console.log("  Signal Swarm — X Layer Testnet Setup");
+  console.log("  ABSOLUT — X Layer Testnet Setup");
   console.log("─────────────────────────────────────────────\n");
 
   const provider = new ethers.JsonRpcProvider(RPC);
@@ -78,7 +78,7 @@ async function main() {
   // Derive 3 child wallets deterministically using hash-based seeds
   const makeAgentWallet = (index) => {
     const agentSeed = ethers.keccak256(ethers.concat([
-      ethers.toUtf8Bytes("signal-swarm-agent-"),
+      ethers.toUtf8Bytes("absolut-agent-"),
       ethers.toUtf8Bytes(String(index)),
       ethers.getBytes(COORDINATOR_KEY),
     ]));

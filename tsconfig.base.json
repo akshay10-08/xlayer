@@ -16,10 +16,10 @@
     "esModuleInterop": true,
     "baseUrl": ".",
     "paths": {
-      "@signal-swarm/shared": ["packages/shared/src/index.ts"],
-      "@signal-swarm/shared/*": ["packages/shared/src/*"],
-      "@signal-swarm/agents": ["packages/agents/src/index.ts"],
-      "@signal-swarm/agents/*": ["packages/agents/src/*"]
+      "@absolut/shared": ["packages/shared/src/index.ts"],
+      "@absolut/shared/*": ["packages/shared/src/*"],
+      "@absolut/agents": ["packages/agents/src/index.ts"],
+      "@absolut/agents/*": ["packages/agents/src/*"]
     }
   }
 }
