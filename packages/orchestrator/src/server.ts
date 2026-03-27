@@ -11,7 +11,10 @@ import { buildSnapshot } from "./engine.js";
 const app = express();
 const port = 3001;
 
-app.use(cors({ origin: "http://localhost:5173" }));
+app.use(cors({
+  origin: ['http://localhost:5173', 'http://localhost:3000'],
+  methods: ['GET', 'POST']
+}));
 app.use(express.json());
 
 import { openTradeOnchain, closeTradeOnchain, getUserJournal } from "./journal-service.js";

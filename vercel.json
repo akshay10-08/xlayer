@@ -1,0 +1,5 @@
+{
+  "buildCommand": "npm run build --workspace @absolut/shared && npm run build --workspace absolut-dashboard",
+  "outputDirectory": "packages/dashboard/dist",
+  "framework": "vite"
+}

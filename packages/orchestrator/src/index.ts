@@ -21,7 +21,10 @@ const jobs = new Map<string, { status: "pending" | "done" | "error"; result?: un
 const app = express();
 const port = Number(process.env.PORT ?? 4000);
 
-app.use(cors());
+app.use(cors({
+  origin: ['http://localhost:5173', 'http://localhost:3000'],
+  methods: ['GET', 'POST']
+}));
 app.use(express.json());
 
 // ─── Health ────────────────────────────────────────────────────────────────────

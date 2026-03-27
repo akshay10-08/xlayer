@@ -10,3 +10,4 @@ coverage
 dashboard.log
 tmp/
 *.tsbuildinfo
+.vercel

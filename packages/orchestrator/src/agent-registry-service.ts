@@ -81,36 +81,41 @@ export async function getAllAgents(): Promise<AgentInfo[]> {
 
   const registry = getRegistry();
   const count = Number(await (registry.agentCount as Function)());
-  const agents: AgentInfo[] = [];
-
+  const promises = [];
   for (let i = 0; i < count; i++) {
-    try {
-      const agent = await (registry.getAgent as Function)(i);
-      if (Number(agent.status) !== 0) continue; // skip non-ACTIVE
-
-      const accuracy = await (registry.getAgentAccuracy as Function)(i);
-      const baseAgent = {
-        id: Number(agent.id),
-        owner: agent.owner as string,
-        agentWallet: agent.agentWallet as string,
-        name: agent.name as string,
-        description: agent.description as string,
-        agentType: Number(agent.agentType),
-        agentTypeLabel: AGENT_TYPE_LABELS[Number(agent.agentType)] ?? "CUSTOM",
-        status: Number(agent.status),
-        signalPrice: Number(agent.signalPriceUSDC) / 1e6,
-        totalHires: Number(agent.totalHires),
-        totalEarned: Number(agent.totalEarned) / 1e6,
-        accuracy: Number(accuracy),
-        strategy: agent.strategy as string,
-        registeredAt: new Date(Number(agent.registeredAt) * 1000).toISOString(),
-        lastActiveAt: new Date(Number(agent.lastActiveAt) * 1000).toISOString(),
-      };
-      agents.push(applyOverride(baseAgent));
-    } catch {
-      // Skip agents that fail fetching
-    }
+    promises.push((async () => {
+      try {
+        const agent = await (registry.getAgent as Function)(i);
+        if (Number(agent.status) !== 0) return null; // skip non-ACTIVE
+  
+        const accuracy = await (registry.getAgentAccuracy as Function)(i);
+        const baseAgent = {
+          id: Number(agent.id),
+          owner: agent.owner as string,
+          agentWallet: agent.agentWallet as string,
+          name: agent.name as string,
+          description: agent.description as string,
+          agentType: Number(agent.agentType),
+          agentTypeLabel: AGENT_TYPE_LABELS[Number(agent.agentType)] ?? "CUSTOM",
+          status: Number(agent.status),
+          signalPrice: Number(agent.signalPriceUSDC) / 1e6,
+          totalHires: Number(agent.totalHires),
+          totalEarned: Number(agent.totalEarned) / 1e6,
+          accuracy: Number(accuracy),
+          strategy: agent.strategy as string,
+          registeredAt: new Date(Number(agent.registeredAt) * 1000).toISOString(),
+          lastActiveAt: new Date(Number(agent.lastActiveAt) * 1000).toISOString(),
+        };
+        return applyOverride(baseAgent);
+      } catch {
+        // Skip agents that fail fetching
+        return null;
+      }
+    })());
   }
+
+  const resolvedAgents = await Promise.all(promises);
+  const agents: AgentInfo[] = resolvedAgents.filter(Boolean) as AgentInfo[];
 
   // Sort by totalEarned desc (marketplace leaderboard)
   return agents.sort((a, b) => b.totalEarned - a.totalEarned);
