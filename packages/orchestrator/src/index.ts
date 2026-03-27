@@ -5,6 +5,15 @@ import { getSignalHistory } from "./onchain-recorder.js";
 import { openTradeOnchain, closeTradeOnchain, getUserJournal } from "./journal-service.js";
 import { analyzePortfolio } from "./portfolio-analyzer.js";
 import { getUserPortfolioReports } from "./portfolio-recorder.js";
+import {
+  registerAgent,
+  getAllAgents,
+  getAgentById,
+  getOwnerAgents,
+  runCustomAgent,
+  type MarketData,
+} from "./agent-registry-service.js";
+import { generateAgentWallet, getAgentBalance } from "./custom-agent-wallet.js";
 
 // ─── In-memory job queue ─────────────────────────────────────────────────────
 const jobs = new Map<string, { status: "pending" | "done" | "error"; result?: unknown; error?: string }>();
@@ -41,18 +50,49 @@ app.post("/api/analyze", (req, res) => {
     portfolioUSDC?: number;
     enabledAgents?: string[];
     userAddress?: string;
+    customAgentIds?: number[];
   };
 
+  const pair = body.pair ?? body.symbol ?? "OKB/USDC";
   const params: AnalyzeParams = {
-    symbol: body.pair ?? body.symbol ?? "OKB/USDC",
+    symbol: pair,
     timeframe: body.timeframe ?? "15m",
     riskProfile: body.riskProfile ?? "moderate",
     portfolioUSDC: Number(body.portfolioUSDC ?? 1000),
-    enabledAgents: body.enabledAgents,
-    userAddress: body.userAddress,
+    ...(body.enabledAgents && { enabledAgents: body.enabledAgents }),
+    ...(body.userAddress && { userAddress: body.userAddress }),
   };
 
-  void buildSnapshot(params).then((data) => res.json(data));
+  const customAgentIds: number[] = body.customAgentIds ?? [];
+
+  void (async () => {
+    const data = await buildSnapshot(params);
+
+    // Run any requested custom agents alongside default agents
+    if (customAgentIds.length > 0) {
+      const marketData: MarketData = {
+        shortEma: 0,
+        longEma: 0,
+        rsi: 50,
+        whaleFlowScore: 0,
+        sentimentScore: 0,
+        currentPrice: data.market.price,
+        change24h: data.market.changePct,
+      };
+
+      const customSignals = await Promise.allSettled(
+        customAgentIds.map(id => runCustomAgent(id, pair, marketData))
+      );
+
+      const successfulCustom = customSignals
+        .filter((r): r is PromiseFulfilledResult<Awaited<ReturnType<typeof runCustomAgent>>> => r.status === "fulfilled")
+        .map(r => r.value);
+
+      (data as any).customAgentSignals = successfulCustom;
+    }
+
+    res.json(data);
+  })();
 });
 
 // ─── POST /api/scan — multi-pair scanner ────────────────────────────────────
@@ -139,6 +179,201 @@ app.get("/api/portfolio/history/:address", async (req, res) => {
 // ─── GET /api/scanner-pairs — list supported pairs ────────────────────────────
 app.get("/api/scanner-pairs", (_req, res) => {
   res.json({ pairs: SCANNER_PAIRS });
+});
+
+// ═══════════════════════════════════════════════════════════════════════
+// MARKETPLACE ROUTES
+// ═══════════════════════════════════════════════════════════════════════
+
+// GET /api/marketplace/agents — list all active agents (leaderboard)
+app.get("/api/marketplace/agents", async (_req, res) => {
+  try {
+    const agents = await getAllAgents();
+    res.json({ agents, count: agents.length });
+  } catch (error: any) {
+    console.error("[Marketplace] Failed to list agents:", error);
+    res.status(500).json({ error: error?.message || "Internal Server Error" });
+  }
+});
+
+// GET /api/marketplace/agents/:id — single agent details
+app.get("/api/marketplace/agents/:id", async (req, res) => {
+  try {
+    const id = Number(req.params.id);
+    if (isNaN(id)) { res.status(400).json({ error: "Invalid agent id" }); return; }
+    const agent = await getAgentById(id);
+    if (!agent) { res.status(404).json({ error: "Agent not found" }); return; }
+    res.json(agent);
+  } catch (error: any) {
+    console.error("[Marketplace] Failed to get agent:", error);
+    res.status(500).json({ error: error?.message || "Internal Server Error" });
+  }
+});
+
+// POST /api/marketplace/register — user registers a new agent
+app.post("/api/marketplace/register", async (req, res) => {
+  try {
+    const { 
+      name, description, strategy, 
+      agentType, signalPriceUSDC 
+    } = req.body;
+
+    // Validate inputs
+    if (!name || !strategy || agentType === undefined) {
+      return res.status(400).json({ 
+        error: "name, strategy, agentType required" 
+      });
+    }
+
+    // Generate a fresh wallet for this agent
+    const { ethers } = await import("ethers");
+    const agentWallet = ethers.Wallet.createRandom();
+    
+    // Get owner address from connected wallet
+    // (passed from frontend or use coordinator as default)
+    const ownerAddress = req.body.ownerAddress 
+      || process.env.COORDINATOR_KEY;
+
+    // Register on AgentRegistry contract
+    const provider = new ethers.JsonRpcProvider(
+      process.env.XLAYER_TESTNET_RPC
+    );
+    const signer = new ethers.Wallet(
+      process.env.COORDINATOR_KEY!, provider
+    );
+    
+    // Load AgentRegistry ABI
+    const fs = await import("fs");
+    const path = await import("path");
+    const { fileURLToPath } = await import("url");
+    const __filename = fileURLToPath(import.meta.url);
+    const __dirname = path.dirname(__filename);
+    
+    const AgentRegistryABI = JSON.parse(
+      fs.readFileSync(
+        path.resolve(__dirname, "../../../artifacts/contracts/AgentRegistry.sol/AgentRegistry.json"),
+        "utf-8"
+      )
+    );
+    const registry = new ethers.Contract(
+      process.env.AGENT_REGISTRY_ADDRESS!,
+      AgentRegistryABI.abi,
+      signer
+    );
+
+    const tx = await registry.registerAgent(
+      name,
+      description || strategy,
+      strategy,
+      Number(agentType),
+      agentWallet.address,
+      Math.round(Number(signalPriceUSDC) * 1e6)
+    );
+    const receipt = await tx.wait();
+
+    // Extract agentId from event
+    const event = receipt.logs.find(
+      (l: any) => l.fragment?.name === "AgentRegistered"
+    );
+    const agentId = Number(event?.args?.[0] ?? 0);
+
+    res.json({
+      success: true,
+      agentId,
+      agentWallet: agentWallet.address,
+      agentWalletPrivateKey: agentWallet.privateKey,
+      txHash: receipt.hash,
+      explorerUrl: 
+        "https://www.oklink.com/xlayer-test/tx/" 
+        + receipt.hash
+    });
+
+  } catch (err: any) {
+    console.error("Register agent error:", err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// GET /api/marketplace/my-agents/:address
+app.get("/api/marketplace/my-agents/:address", async (req, res) => {
+  try {
+    const { ethers } = await import("ethers");
+    const provider = new ethers.JsonRpcProvider(process.env.XLAYER_TESTNET_RPC);
+    const fs = await import("fs");
+    const path = await import("path");
+    const { fileURLToPath } = await import("url");
+    const __filename = fileURLToPath(import.meta.url);
+    const __dirname = path.dirname(__filename);
+    
+    const AgentRegistryABI = JSON.parse(
+      fs.readFileSync(
+        path.resolve(__dirname, "../../../artifacts/contracts/AgentRegistry.sol/AgentRegistry.json"),
+        "utf-8"
+      )
+    );
+    const registry = new ethers.Contract(
+      process.env.AGENT_REGISTRY_ADDRESS!,
+      AgentRegistryABI.abi,
+      provider
+    );
+
+    const agentIds = await registry.getOwnerAgents(req.params.address);
+    
+    const agents = await Promise.all(
+      agentIds.map(async (id: any) => {
+        const agent = await registry.getAgent(id);
+        const accuracy = await registry.getAgentAccuracy(id);
+        return {
+          id: Number(agent.id),
+          name: agent.name,
+          description: agent.description,
+          strategy: agent.strategy,
+          agentType: Number(agent.agentType),
+          agentWallet: agent.agentWallet,
+          signalPrice: Number(agent.signalPriceUSDC)/1e6,
+          totalHires: Number(agent.totalHires),
+          totalEarned: Number(agent.totalEarned)/1e6,
+          accuracy: Number(accuracy),
+          status: Number(agent.status),
+          registeredAt: new Date(Number(agent.registeredAt)*1000).toISOString()
+        };
+      })
+    );
+
+    res.json({ agents });
+  } catch(err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// GET /api/marketplace/earnings/:agentWallet — earnings for agent wallet
+app.get("/api/marketplace/earnings/:agentWallet", async (req, res) => {
+  try {
+    const { agentWallet } = req.params;
+    if (!/^0x[0-9a-fA-F]{40}$/.test(agentWallet)) {
+      res.status(400).json({ error: "Invalid wallet address" }); return;
+    }
+    const balance = await getAgentBalance(agentWallet);
+    res.json({ agentWallet, ...balance });
+  } catch (error: any) {
+    console.error("[Marketplace] Failed to get earnings:", error);
+    res.status(500).json({ error: error?.message || "Internal Server Error" });
+  }
+});
+
+// GET /api/marketplace/my-agents/:ownerAddress — agents owned by a wallet
+app.get("/api/marketplace/my-agents/:ownerAddress", async (req, res) => {
+  try {
+    const { ownerAddress } = req.params;
+    if (!/^0x[0-9a-fA-F]{40}$/.test(ownerAddress)) {
+      res.status(400).json({ error: "Invalid wallet address" }); return;
+    }
+    const agents = await getOwnerAgents(ownerAddress);
+    res.json({ ownerAddress, agents, count: agents.length });
+  } catch (error: any) {
+    console.error("[Marketplace] Failed to get owner agents:", error);
+    res.status(500).json({ error: error?.message || "Internal Server Error" });
+  }
 });
 
 app.listen(port, () => {

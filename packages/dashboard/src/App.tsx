@@ -1,4 +1,4 @@
-import { useCallback, useState } from "react";
+import { useCallback, useState, useEffect } from "react";
 import type { DashboardSnapshot } from "./types";
 import { analyzeSymbol, scanPairs, getHistory } from "./lib/mockApi";
 import WalletButton from "./components/WalletButton";
@@ -6,10 +6,11 @@ import LoadingTransition from "./components/LoadingTransition";
 import { useAccount } from "wagmi";
 import { TakeTradeModal } from "./components/TakeTradeModal";
 import { PortfolioTab } from "./components/PortfolioTab";
+import { MarketplaceTab } from "./components/marketplace/MarketplaceTab";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 type Phase = "landing" | "loading" | "transitioning" | "results";
-type AppTab = "analyze" | "scanner" | "history" | "portfolio";
+type AppTab = "analyze" | "scanner" | "history" | "portfolio" | "agents";
 type RiskLevel = "safe" | "balanced" | "degen";
 type Timeframe = "15m" | "1h" | "4h" | "1d";
 
@@ -140,6 +141,24 @@ export default function App() {
   const [pendingPosition, setPendingPosition] = useState<PositionSuggestion | null>(null);
   const [pendingTx, setPendingTx] = useState<string>("");
 
+  const [customAgents, setCustomAgents] = useState<{ id: string; name: string }[]>([]);
+
+  useEffect(() => {
+    if (tab === "analyze") {
+      try {
+        setCustomAgents(JSON.parse(localStorage.getItem('mySwarm') || '[]'));
+      } catch {
+        setCustomAgents([]);
+      }
+    }
+  }, [tab]);
+
+  const removeAgent = (id: string) => {
+    const updated = customAgents.filter(a => a.id !== id);
+    setCustomAgents(updated);
+    localStorage.setItem('mySwarm', JSON.stringify(updated));
+  };
+
   const handleAsk = useCallback(async () => {
     setPhase("loading");
     setError("");
@@ -154,7 +173,8 @@ export default function App() {
     }, 850);
 
     try {
-      const data = await analyzeSymbol(pair, timeframe, risk, portfolio, isConnected ? address : undefined);
+      const customIds = customAgents.map(a => Number(a.id));
+      const data = await analyzeSymbol(pair, timeframe, risk, portfolio, isConnected ? address : undefined, customIds);
       clearInterval(iv);
       const anyData = data as unknown as Record<string, unknown>;
       // Store results and show transition screen
@@ -216,15 +236,22 @@ export default function App() {
         <nav className="top-nav">
           <div className="brand-inline">⚡ ABSOLUT</div>
           <div className="nav-tabs">
-            {(["portfolio","analyze","scanner","history"] as AppTab[]).map(t => (
+            {(["portfolio","analyze","scanner","history","agents"] as AppTab[]).map(t => (
               <button key={t} className={`nav-tab ${tab===t?"active":""}`}
                 onClick={() => { setTab(t); if(t==="analyze") setPhase("landing"); if(t==="history"&&isConnected&&address) void handleLoadHistory(address); }}>
-                {t==="portfolio"?"🗂️ Portfolio":t==="analyze"?"🔮 Analyze":t==="scanner"?"🔭 Scanner":"📒 Journal"}
+                {t==="portfolio"?"🗂️ Portfolio":t==="analyze"?"🔮 Analyze":t==="scanner"?"🔭 Scanner":t==="history"?"📒 Journal":"🤖 Agents"}
               </button>
             ))}
           </div>
           <WalletButton />
         </nav>
+      )}
+
+      {/* ── PORTFOLIO TAB ─────────────────────────────────────────────────── */}
+      {tab === "portfolio" && (
+        <div className="tab-pane">
+          <PortfolioTab address={address} isConnected={isConnected} />
+        </div>
       )}
 
       {/* ── ANALYZE TAB ─────────────────────────────────────────────────── */}
@@ -312,6 +339,32 @@ export default function App() {
                     <span className="slider-label">$10,000</span>
                   </div>
                 </div>
+
+                {/* #5 — Custom Swarm from Marketplace */}
+                {customAgents.length > 0 && (
+                  <div className="input-group">
+                    <label>⚙️ Your Custom Swarm</label>
+                    <div className="custom-swarm-pills">
+                      {customAgents.map(a => (
+                        <div key={a.id} className="agent-pill">
+                          {a.name}
+                          <button onClick={(e) => { e.stopPropagation(); removeAgent(a.id); }}>×</button>
+                        </div>
+                      ))}
+                      <button className="add-more-btn" onClick={() => setTab("agents")}>
+                        + Add from Marketplace &rarr;
+                      </button>
+                    </div>
+                  </div>
+                )}
+                {customAgents.length === 0 && (
+                  <div className="input-group">
+                    <label>⚙️ Your Custom Swarm</label>
+                    <button className="add-more-btn empty" onClick={() => setTab("agents")}>
+                      + Hire custom agents &rarr;
+                    </button>
+                  </div>
+                )}
 
                 {error && <div className="error-banner">⚠️ {error}</div>}
 
@@ -608,10 +661,10 @@ export default function App() {
         </div>
       )}
 
-      {/* ── PORTFOLIO TAB ──────────────────────────────────────────────────── */}
-      {tab === "portfolio" && (
+      {/* ── AGENTS ───────────────────────────────────────────────────────────── */}
+      {tab === "agents" && (
         <div className="tab-pane">
-          <PortfolioTab address={address} isConnected={isConnected} />
+          <MarketplaceTab address={isConnected ? address : undefined} />
         </div>
       )}
     </div>

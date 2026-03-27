@@ -8,7 +8,10 @@ const PRIVATE_KEY = process.env.DEPLOYER_PRIVATE_KEY || "0xac0974bec39a17e36ba4a
 const config: HardhatUserConfig = {
   solidity: {
     version: "0.8.20",
-    settings: { optimizer: { enabled: true, runs: 200 } },
+    settings: {
+      optimizer: { enabled: true, runs: 200 },
+      viaIR: true,
+    },
   },
   networks: {
     xlayerTestnet: {
