@@ -294,57 +294,8 @@ app.post("/api/marketplace/register", async (req, res) => {
   }
 });
 
-// GET /api/marketplace/my-agents/:address
-app.get("/api/marketplace/my-agents/:address", async (req, res) => {
-  try {
-    const { ethers } = await import("ethers");
-    const provider = new ethers.JsonRpcProvider(process.env.XLAYER_TESTNET_RPC);
-    const fs = await import("fs");
-    const path = await import("path");
-    const { fileURLToPath } = await import("url");
-    const __filename = fileURLToPath(import.meta.url);
-    const __dirname = path.dirname(__filename);
-    
-    const AgentRegistryABI = JSON.parse(
-      fs.readFileSync(
-        path.resolve(__dirname, "../../../artifacts/contracts/AgentRegistry.sol/AgentRegistry.json"),
-        "utf-8"
-      )
-    );
-    const registry = new ethers.Contract(
-      process.env.AGENT_REGISTRY_ADDRESS!,
-      AgentRegistryABI.abi,
-      provider
-    );
-
-    const agentIds = await registry.getOwnerAgents(req.params.address);
-    
-    const agents = await Promise.all(
-      agentIds.map(async (id: any) => {
-        const agent = await registry.getAgent(id);
-        const accuracy = await registry.getAgentAccuracy(id);
-        return {
-          id: Number(agent.id),
-          name: agent.name,
-          description: agent.description,
-          strategy: agent.strategy,
-          agentType: Number(agent.agentType),
-          agentWallet: agent.agentWallet,
-          signalPrice: Number(agent.signalPriceUSDC)/1e6,
-          totalHires: Number(agent.totalHires),
-          totalEarned: Number(agent.totalEarned)/1e6,
-          accuracy: Number(accuracy),
-          status: Number(agent.status),
-          registeredAt: new Date(Number(agent.registeredAt)*1000).toISOString()
-        };
-      })
-    );
-
-    res.json({ agents });
-  } catch(err: any) {
-    res.status(500).json({ error: err.message });
-  }
-});
+// Removed duplicate route for /api/marketplace/my-agents/:address
+// This avoids bypassing the agent overrides and falls back to /api/marketplace/my-agents/:ownerAddress
 
 // GET /api/marketplace/earnings/:agentWallet — earnings for agent wallet
 app.get("/api/marketplace/earnings/:agentWallet", async (req, res) => {

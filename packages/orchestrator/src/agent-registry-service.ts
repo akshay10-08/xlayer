@@ -11,6 +11,7 @@ dotenv.config({ path: path.resolve(__dirname, "../../../.env") });
 
 import { ethers } from "ethers";
 import { createRequire } from "module";
+import { applyOverride } from "./agent-overrides.js";
 const require = createRequire(import.meta.url);
 // Load compiled artifact (TE: hardhat compile produces this)
 const AgentRegistryABI = require("../../../artifacts/contracts/AgentRegistry.sol/AgentRegistry.json");
@@ -88,7 +89,7 @@ export async function getAllAgents(): Promise<AgentInfo[]> {
       if (Number(agent.status) !== 0) continue; // skip non-ACTIVE
 
       const accuracy = await (registry.getAgentAccuracy as Function)(i);
-      agents.push({
+      const baseAgent = {
         id: Number(agent.id),
         owner: agent.owner as string,
         agentWallet: agent.agentWallet as string,
@@ -104,7 +105,8 @@ export async function getAllAgents(): Promise<AgentInfo[]> {
         strategy: agent.strategy as string,
         registeredAt: new Date(Number(agent.registeredAt) * 1000).toISOString(),
         lastActiveAt: new Date(Number(agent.lastActiveAt) * 1000).toISOString(),
-      });
+      };
+      agents.push(applyOverride(baseAgent));
     } catch {
       // Skip agents that fail fetching
     }
@@ -121,7 +123,7 @@ export async function getAgentById(id: number): Promise<AgentInfo | null> {
     const registry = getRegistry();
     const agent = await (registry.getAgent as Function)(id);
     const accuracy = await (registry.getAgentAccuracy as Function)(id);
-    return {
+    const baseAgent = {
       id: Number(agent.id),
       owner: agent.owner as string,
       agentWallet: agent.agentWallet as string,
@@ -138,6 +140,7 @@ export async function getAgentById(id: number): Promise<AgentInfo | null> {
       registeredAt: new Date(Number(agent.registeredAt) * 1000).toISOString(),
       lastActiveAt: new Date(Number(agent.lastActiveAt) * 1000).toISOString(),
     };
+    return applyOverride(baseAgent);
   } catch {
     return null;
   }
@@ -163,9 +166,10 @@ export async function runCustomAgent(
   marketData: MarketData
 ): Promise<CustomAgentSignal> {
   const registry = getRegistry(coordinatorWallet ?? undefined);
-  const agent = await (registry.getAgent as Function)(agentId);
+  const agentInfo = await getAgentById(agentId);
+  if (!agentInfo) throw new Error("Agent not found");
 
-  const strategy = agent.strategy as string;
+  const strategy = agentInfo.strategy;
 
   const prompt = `You are a trading signal agent with this strategy:
 "${strategy}"
@@ -192,7 +196,7 @@ Respond in JSON only (no markdown, no explanation outside JSON):
         agentId,
         coordinatorWallet.address,
         pair,
-        Number(agent.signalPriceUSDC),
+        Math.round(agentInfo.signalPrice * 1e6),
         result.verdict
       ) as ethers.TransactionResponse;
       await tx.wait();
@@ -204,7 +208,7 @@ Respond in JSON only (no markdown, no explanation outside JSON):
 
   return {
     agentId,
-    agentName: agent.name as string,
+    agentName: agentInfo.name,
     pair,
     ...result,
   };
