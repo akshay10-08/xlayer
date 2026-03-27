@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { AgentInfo } from "../../lib/mockApi";
+import { AgentInfo, getMyAgents } from "../../lib/mockApi";
 
 const AGENT_EMOJIS: Record<number | string, string> = {
   0: "📈", 1: "🔄", 2: "🔗", 3: "😌", 4: "📊", 5: "⚙️",
@@ -24,25 +24,19 @@ export function MyAgents({ address, onNavigateToCreate }: { address?: string, on
     const localAgents = JSON.parse(localStorage.getItem('myAgents') || '[]');
     setAgents(localAgents);
 
-    // 2. Fetch from API
-    fetch(`http://localhost:4000/api/marketplace/my-agents/${address}`)
-      .then(res => res.json())
-      .then(data => {
-        if (data.agents) {
-          // 3. Merge and deduplicate by agentId
-          const merged = [...localAgents];
-          data.agents.forEach((apiAgent: any) => {
-            const exists = merged.findIndex(a => a.id === apiAgent.id);
-            if (exists >= 0) {
-              merged[exists] = { ...merged[exists], ...apiAgent }; // Update existing
-            } else {
-              merged.push(apiAgent); // Add new
-            }
-          });
-          setAgents(merged);
+    // 2. Fetch from API using mockApi helper
+    getMyAgents(address).then(apiAgents => {
+      const merged = [...localAgents];
+      apiAgents.forEach((apiAgent: any) => {
+        const exists = merged.findIndex(a => a.id === apiAgent.id);
+        if (exists >= 0) {
+          merged[exists] = { ...merged[exists], ...apiAgent }; // Update existing
+        } else {
+          merged.push(apiAgent); // Add new
         }
-      })
-      .catch(err => console.error("Failed to fetch my agents:", err))
+      });
+      setAgents(merged);
+    }).catch(err => console.error("Failed to fetch my agents:", err))
       .finally(() => setLoading(false));
 
   }, [address]);
