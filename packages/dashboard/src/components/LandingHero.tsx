@@ -1,6 +1,7 @@
 import { useState } from "react";
 import WalletButton from "./WalletButton";
 import "./LandingHero.css";
+import logo from "../assets/absolut-logo.png";
 
 export default function LandingHero({ onGetStarted }: { onGetStarted: () => void }) {
   return (
@@ -12,7 +13,19 @@ export default function LandingHero({ onGetStarted }: { onGetStarted: () => void
       </div>
 
       <nav className="landing-nav">
-        <div className="nav-logo">⚡ ABSOLUT</div>
+        <div className="nav-logo">
+           <img 
+             src={logo} 
+             alt="ABSOLUT" 
+             style={{
+               height: "56px",
+               width: "56px",
+               objectFit: "contain",
+               marginRight: "10px"
+             }} 
+           />
+           ABSOLUT
+        </div>
         <div className="nav-links">
           <a href="#">Home</a>
           <a href="#">Resources</a>

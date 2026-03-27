@@ -7,6 +7,7 @@ import { useAccount } from "wagmi";
 import { TakeTradeModal } from "./components/TakeTradeModal";
 import { PortfolioTab } from "./components/PortfolioTab";
 import { MarketplaceTab } from "./components/marketplace/MarketplaceTab";
+import logo from "./assets/absolut-logo.png";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 type Phase = "landing" | "loading" | "transitioning" | "results";
@@ -235,7 +236,19 @@ export default function App() {
       {/* Nav */}
       {(phase !== "loading" && phase !== "transitioning") && (
         <nav className="top-nav">
-          <div className="brand-inline">⚡ ABSOLUT</div>
+          <div className="brand-inline">
+            <img 
+              src={logo} 
+              alt="ABSOLUT" 
+              style={{
+                height: "56px",
+                width: "56px",
+                objectFit: "contain",
+                marginRight: "10px"
+              }} 
+            />
+            ABSOLUT
+          </div>
           <div className="nav-tabs">
             {(["portfolio","analyze","agents","scanner","history"] as AppTab[]).map(t => (
               <button key={t} className={`nav-tab ${tab===t?"active":""}`}
@@ -262,7 +275,7 @@ export default function App() {
           {phase === "landing" && (
             <div className="screen-center">
               <div className="landing-card">
-                <div className="brand-hero">⚡ ABSOLUT</div>
+                <div className="brand-hero">ABSOLUT</div>
                 <div className="brand-sub">No noise. No doubt. ABSOLUT conviction.</div>
 
                 {/* #1 — Pair selector: pill grid */}
@@ -383,7 +396,7 @@ export default function App() {
           {phase === "loading" && (
             <div className="screen-center">
               <div className="loading-card">
-                <div className="brand-pulse">⚡ ABSOLUT</div>
+                <div className="brand-pulse">ABSOLUT</div>
                 <div className="loading-pair">Contacting agents...</div>
               </div>
             </div>
@@ -571,7 +584,7 @@ export default function App() {
                   const conf = Math.round(snapshot.consensus.finalScore*100);
                   const agents = snapshot.agents.filter((a: any)=>a.agent!=="risk").map((a: any)=>`${agentMeta[a.agent]?.icon||""} ${a.agent}:${a.action}`).join(" ");
                   const tx = onchainTx.slice(0,10)+"...";
-                  window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(`⚡ ABSOLUT just analyzed ${snapshot.pair}\n\n${verdictEmoji(snapshot.consensus.action)} ${snapshot.consensus.action} · ${conf}% confidence\n\n${agents}\n\nVerified onchain: ${tx}\n#XLayer #ABSOLUT #DeFi @OKX`)}`, "_blank");
+                  window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(`ABSOLUT just analyzed ${snapshot.pair}\n\n${verdictEmoji(snapshot.consensus.action)} ${snapshot.consensus.action} · ${conf}% confidence\n\n${agents}\n\nVerified onchain: ${tx}\n#XLayer #ABSOLUT #DeFi @OKX`)}`, "_blank");
                 }}>📤 Share this signal</button>
               </div>
               

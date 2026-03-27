@@ -736,6 +736,7 @@ button, input, select { font: inherit; }
   font-weight: 800 !important;
   border: none !important;
   box-shadow: none !important;
+  font-size: 13px !important;
 }
 
 /* ─── Responsive ───────────────────────────────────────── */
@@ -768,17 +769,20 @@ button, input, select { font: inherit; }
   display: flex;
   align-items: center;
   gap: 16px;
-  padding: 12px 24px;
+  padding: 0 24px;
+  height: 64px;
   background: #0A0F0A;
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
   position: sticky; top: 0; z-index: 100;
 }
 .brand-inline {
   font-weight: 800;
-  font-size: 1rem;
+  font-size: 28px;
   color: #00e676;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.1em;
   flex-shrink: 0;
+  display: flex;
+  align-items: center;
 }
 .nav-tabs {
   display: flex;
@@ -793,9 +797,9 @@ button, input, select { font: inherit; }
   border: none;
   background: transparent;
   color: rgba(255, 255, 255, 0.5);
-  font-size: 0.85rem;
-  font-weight: 600;
-  letter-spacing: 0.08em;
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0.12em;
   cursor: pointer;
   transition: all 0.18s;
   border-bottom: 2px solid transparent;
