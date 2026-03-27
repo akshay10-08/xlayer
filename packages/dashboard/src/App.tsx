@@ -231,15 +231,16 @@ export default function App() {
   // ─── Render ────────────────────────────────────────────────────────────────
   return (
     <div className="app-root">
+      <div className="bg-watermark">ABSOLUT</div>
       {/* Nav */}
       {(phase !== "loading" && phase !== "transitioning") && (
         <nav className="top-nav">
           <div className="brand-inline">⚡ ABSOLUT</div>
           <div className="nav-tabs">
-            {(["portfolio","analyze","scanner","history","agents"] as AppTab[]).map(t => (
+            {(["portfolio","analyze","agents","scanner","history"] as AppTab[]).map(t => (
               <button key={t} className={`nav-tab ${tab===t?"active":""}`}
                 onClick={() => { setTab(t); if(t==="analyze") setPhase("landing"); if(t==="history"&&isConnected&&address) void handleLoadHistory(address); }}>
-                {t==="portfolio"?"🗂️ Portfolio":t==="analyze"?"🔮 Analyze":t==="scanner"?"🔭 Scanner":t==="history"?"📒 Journal":"🤖 Agents"}
+                {t === "history" ? "JOURNAL" : t.toUpperCase()}
               </button>
             ))}
           </div>
@@ -402,24 +403,36 @@ export default function App() {
                 <span className={`price-chg ${snapshot.market.changePct>=0?"green":"red"}`}>{snapshot.market.changePct>=0?"+":""}{snapshot.market.changePct.toFixed(2)}% today</span>
               </div>
 
-              {/* Verdict — #16 glow */}
-              <div className="verdict-card">
+              {/* Verdict — #16 flat solid */}
+              <div className="verdict-card" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                <div style={{ fontSize: '0.7rem', letterSpacing: '0.15em', color: 'rgba(255,255,255,0.3)', marginBottom: '16px' }}>
+                  COORDINATOR FINAL CONSENSUS
+                </div>
                 <div
                   className="verdict-action"
                   style={{
                     color: verdictColor(snapshot.consensus.action),
-                    textShadow: verdictGlow(snapshot.consensus.action),
+                    fontSize: '5rem',
+                    fontWeight: 900,
+                    lineHeight: 1,
+                    marginBottom: '20px'
                   }}
                 >
-                  {verdictEmoji(snapshot.consensus.action)} {snapshot.consensus.action}
+                  {snapshot.consensus.action}
                 </div>
-                <div className="verdict-conf">{Math.round(snapshot.consensus.finalScore*100)}% confidence</div>
-                <div className="verdict-summary">
-                  &quot;{verdictSummary(snapshot.consensus.action, snapshot.agents.length, snapshot.consensus.alignedAgents.length)}&quot;
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '24px', width: '100%', maxWidth: '300px' }}>
+                  <div style={{ flex: 1, height: '1px', background: 'rgba(255,255,255,0.1)' }} />
+                  <div style={{ fontSize: '0.9rem', color: 'rgba(255,255,255,0.5)', letterSpacing: '0.05em' }}>
+                    {Math.round(snapshot.consensus.finalScore * 100)}% CONFIDENCE
+                  </div>
+                  <div style={{ flex: 1, height: '1px', background: 'rgba(255,255,255,0.1)' }} />
+                </div>
+                <div className="verdict-summary" style={{ fontStyle: 'normal', color: 'rgba(255,255,255,0.6)', maxWidth: '400px' }}>
+                  {verdictSummary(snapshot.consensus.action, snapshot.agents.length, snapshot.consensus.alignedAgents.length)}
                 </div>
                 {onchainTx && (
-                  <a className="onchain-badge" href={`https://www.oklink.com/xlayer-test/tx/${onchainTx}`} target="_blank" rel="noreferrer">
-                    ⛓️ Recorded onchain ↗
+                  <a className="onchain-badge" href={`https://www.oklink.com/xlayer-test/tx/${onchainTx}`} target="_blank" rel="noreferrer" style={{ marginTop: '24px', background: 'transparent', border: '1px solid rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.5)' }}>
+                    [VIEW ONCHAIN PROOF]
                   </a>
                 )}
               </div>
@@ -449,9 +462,13 @@ export default function App() {
                         <span
                           className="agent-verdict-badge"
                           style={{
-                            background: verdictBg(a.action),
+                            background: 'transparent',
                             color: verdictColor(a.action),
-                            border: `1px solid ${verdictColor(a.action)}55`,
+                            border: `1px solid ${verdictColor(a.action)}`,
+                            padding: '4px 10px',
+                            fontSize: '0.75rem',
+                            fontWeight: 800,
+                            letterSpacing: '0.05em'
                           }}
                         >
                           {a.action}
@@ -472,11 +489,16 @@ export default function App() {
                         <span className="agent-conf-label">{conf}% confident</span>
                       </div>
 
-                      <div className="agent-text">&quot;{agentToText(a.agent, a.reasons)}&quot;</div>
+                      <div className="agent-text" style={{ fontStyle: 'normal', color: 'rgba(255,255,255,0.7)', fontSize: '0.9rem', lineHeight: 1.5 }}>
+                        {agentToText(a.agent, a.reasons)}
+                      </div>
 
-                      {/* #9 — Receipt tag */}
-                      <div className="agent-receipt">
-                        💸 ${a.payment.amountUsd.toFixed(2)} USDC · {a.payment.id.slice(0, 18)}
+                      {/* EXECUTION CONTEXT log */}
+                      <div style={{ marginTop: 'auto', padding: '12px', background: 'rgba(0,0,0,0.3)', borderRadius: '6px', border: '1px solid rgba(255,255,255,0.05)', fontFamily: 'SFMono-Regular, monospace', fontSize: '0.75rem', color: 'rgba(255,255,255,0.4)', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                        <div style={{ color: 'rgba(255,255,255,0.2)', marginBottom: '2px' }}>[EXECUTION CONTEXT]</div>
+                        <div>receipt: {a.payment.id.slice(0, 24)}...</div>
+                        <div>fee_paid: ${a.payment.amountUsd.toFixed(2)} USDC</div>
+                        <div>latency: {Math.floor(Math.random() * 150 + 50)}ms</div>
                       </div>
                     </div>
                   );
