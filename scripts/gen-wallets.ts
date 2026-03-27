@@ -15,7 +15,7 @@ function gen(name: string) {
 }
 
 console.log("═══════════════════════════════════════════════");
-console.log("    Signal Swarm — Agent Wallet Generator");
+console.log("    ABSOLUT — Agent Wallet Generator");
 console.log("═══════════════════════════════════════════════");
 
 const tech = gen("Technical Agent Wallet");

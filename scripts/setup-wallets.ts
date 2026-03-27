@@ -49,7 +49,7 @@ function compile(name: string, source: string) {
 
 async function main() {
   console.log("─────────────────────────────────────────────");
-  console.log("  Signal Swarm — X Layer Testnet Setup");
+  console.log("  ABSOLUT — X Layer Testnet Setup");
   console.log("─────────────────────────────────────────────\n");
 
   // Connect
@@ -68,7 +68,7 @@ async function main() {
   }
 
   // ─── Agent wallets (deterministic from coordinator key) ───────────────────
-  const seed = ethers.keccak256(ethers.toUtf8Bytes("signal-swarm-agents-" + deployer.address));
+  const seed = ethers.keccak256(ethers.toUtf8Bytes("absolut-agents-" + deployer.address));
   const masterNode = ethers.HDNodeWallet.fromPhrase(
     ethers.Mnemonic.entropyToPhrase(ethers.getBytes(seed))
   );

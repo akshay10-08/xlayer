@@ -1,6 +1,6 @@
-# ABSOLUT MVP
+# ABSOLUT
 
-ABSOLUT is a mock-first, multi-agent trading intelligence MVP for X Layer. The product pairs specialist agents with a coordinator that merges their signals, applies risk checks, and prepares trades for execution.
+Multi-agent AI trading intelligence on X Layer
 
 This repository is being built in parallel, so the documentation assumes the code starts with local mocks and stubs first, then swaps in live OKX, x402, and chain integrations later.
 
