@@ -39,8 +39,11 @@
 
 .nav-logo {
   font-weight: 800;
-  font-size: 1.1rem;
-  letter-spacing: -0.02em;
+  font-size: 28px;
+  color: #00e676;
+  letter-spacing: 0.1em;
+  display: flex;
+  align-items: center;
 }
 
 .nav-links {
