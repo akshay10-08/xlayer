@@ -1,6 +1,6 @@
 import type { DashboardSnapshot } from "../types";
 
-const API_URL = "http://localhost:4000";
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:4000";
 const MOCK_PATH = "/mock-data.json";
 
 // ─── Analyze a single pair ────────────────────────────────────────────────────
@@ -170,6 +170,14 @@ export async function getMarketplaceAgents(): Promise<AgentInfo[]> {
   } catch {
     console.warn("Failed to fetch marketplace agents.");
   }
+  // Fallback to static mock agents
+  try {
+    const res = await fetch("/mock-agents.json");
+    if (res.ok) {
+      const json = await res.json() as { agents: AgentInfo[] };
+      return json.agents ?? [];
+    }
+  } catch {}
   return [];
 }
 
@@ -184,6 +192,14 @@ export async function getMyAgents(address: string): Promise<AgentInfo[]> {
   } catch {
     console.warn("Failed to fetch my agents.");
   }
+  // Fallback to static mock agents filtered by address
+  try {
+    const res = await fetch("/mock-agents.json");
+    if (res.ok) {
+      const json = await res.json() as { agents: AgentInfo[] };
+      return json.agents ? json.agents.filter(a => a.owner.toLowerCase() === address.toLowerCase()) : [];
+    }
+  } catch {}
   return [];
 }
 
