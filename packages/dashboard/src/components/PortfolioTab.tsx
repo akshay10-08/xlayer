@@ -275,30 +275,27 @@ export function PortfolioTab({
       <div className="portfolio-results">
 
         {/* ── Section A: Health Header ── */}
-        <div className="portfolio-health-card" style={{ borderColor: hColor, boxShadow: `0 0 30px ${hColor}30` }}>
+        <div className="portfolio-health-card">
           <div className="portfolio-health-top">
             <div>
               <div className="section-label" style={{ marginBottom: "0.25rem" }}>YOUR PORTFOLIO</div>
-              <div className="portfolio-total-value">${result.totalValueUSDC.toFixed(2)} total</div>
+              <div className="portfolio-total-value">${result.totalValueUSDC.toFixed(2)}</div>
             </div>
-            <div className="portfolio-health-badge" style={{ background: `${hColor}22`, borderColor: hColor, color: hColor }}>
-              {result.overallHealth >= 70 ? "⚡ STRONG" : result.overallHealth >= 45 ? "⚠️ CAUTION" : "🔴 DANGER"}
+            <div className="portfolio-health-badge" style={{ background: `rgba(255,255,255,0.04)`, border: `1px solid ${hColor}`, color: hColor, borderRadius: '999px', fontSize: '0.8rem' }}>
+              {result.overallHealth >= 70 ? "STRONG" : result.overallHealth >= 45 ? "CAUTION" : "DANGER"}
             </div>
           </div>
 
-          <div className="health-bar-wrapper" style={{ marginBottom: "0.75rem" }}>
-            <div className="health-bar-track">
-              <div
-                className="health-bar-fill"
-                style={{ width: `${result.overallHealth}%`, background: hColor, boxShadow: `0 0 10px ${hColor}` }}
-              />
-            </div>
-            <span className="health-bar-label" style={{ color: hColor }}>
-              Health Score: {result.overallHealth}/100
-            </span>
+          <div className="health-bar-wrapper" style={{ marginBottom: "0.75rem", display: "flex", justifyContent: "space-between" }}>
+            <span className="health-bar-label" style={{ color: "rgba(255,255,255,0.5)" }}>HEALTH SCORE</span>
+            <span className="health-bar-label" style={{ color: hColor }}>{result.overallHealth}/100</span>
+          </div>
+          <div className="health-bar-track" style={{ background: "rgba(255,255,255,0.1)", height: "2px", borderRadius: 0 }}>
+            <div className="health-bar-fill" style={{ width: `${result.overallHealth}%`, background: hColor, height: "2px", borderRadius: 0 }} />
           </div>
 
-          <p className="portfolio-summary-text">"{result.summary}"</p>
+          <div className="section-label" style={{ marginTop: "1.5rem" }}>EXECUTIVE SUMMARY</div>
+          <p className="portfolio-summary-text" style={{ fontStyle: "normal", color: "rgba(255,255,255,0.6)", fontWeight: 300 }}>{result.summary}</p>
 
           <div className="portfolio-meta-row">
             <span>Agents analyzed {result.tokens.length} tokens · paid <strong>${result.totalX402Paid.toFixed(2)} USDC</strong> in x402 signals</span>
@@ -341,7 +338,7 @@ export function PortfolioTab({
                   />
                 </div>
 
-                <p className="token-reasoning">"{token.reasoning}"</p>
+                <p className="token-reasoning" style={{ fontStyle: "normal", color: "rgba(255,255,255,0.6)" }}>{token.reasoning}</p>
 
                 <div className="token-agents-grid">
                   <div className="token-agent-row">
@@ -406,21 +403,23 @@ export function PortfolioTab({
           </div>
         )}
 
-        {/* ── Section E: Share + Analyze Again ── */}
-        <div className="portfolio-action-row" style={{ marginTop: "1.5rem", display: "flex", gap: "0.75rem", flexWrap: "wrap" }}>
+        {/* ── Section E: Generate Deep Report ── */}
+        <div style={{ marginTop: "2rem", display: "flex", justifyContent: "center" }}>
           <button
-            className="action-btn primary"
-            onClick={() =>
-              window.open(`https://twitter.com/intent/tweet?text=${buildShareTweet(result)}`, "_blank")
-            }
+            onClick={() => window.open(`https://twitter.com/intent/tweet?text=${buildShareTweet(result)}`, "_blank")}
+            style={{
+              background: "rgba(255,255,255,0.04)",
+              border: "1px solid rgba(255,255,255,0.08)",
+              color: "#FFF",
+              padding: "14px 28px",
+              borderRadius: "999px",
+              fontSize: "0.85rem",
+              fontWeight: 700,
+              letterSpacing: "0.08em",
+              cursor: "pointer"
+            }}
           >
-            📤 Share My Portfolio Report
-          </button>
-          <button
-            className="action-btn secondary"
-            onClick={() => { setPhase("entry"); setResult(null); setJobId(null); }}
-          >
-            🔄 Analyze Again
+            GENERATE DEEP REPORT ✨
           </button>
         </div>
       </div>

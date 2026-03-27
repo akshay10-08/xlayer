@@ -3,14 +3,11 @@
 /* ─── Base ─────────────────────────────────────────────── */
 :root {
   color-scheme: dark;
-  font-family: "Space Grotesk", "Trebuchet MS", sans-serif;
+  font-family: "Exo 2", "Orbitron", sans-serif;
   line-height: 1.5;
   font-weight: 400;
-  color: rgba(245, 247, 250, 0.96);
-  background:
-    radial-gradient(circle at top left, rgba(0, 230, 118, 0.15), transparent 28%),
-    radial-gradient(circle at 80% 18%, rgba(0, 230, 118, 0.08), transparent 24%),
-    linear-gradient(135deg, #05080e 0%, #030408 45%, #05080e 100%);
+  color: #FFFFFF;
+  background: #0A0F0A;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
@@ -21,20 +18,23 @@ html, body, #root { min-height: 100%; margin: 0; }
 body { min-height: 100vh; }
 button, input, select { font: inherit; }
 
-/* ─── Ambient Blobs ────────────────────────────────────── */
-.ambient {
-  position: fixed; inset: auto; pointer-events: none;
-  filter: blur(70px); opacity: 0.85;
-}
-.ambient-one {
-  top: 3rem; right: 2rem;
-  width: 18rem; height: 18rem;
-  background: rgba(0, 230, 118, 0.15);
-}
-.ambient-two {
-  left: -4rem; bottom: 1rem;
-  width: 22rem; height: 22rem;
-  background: rgba(0, 230, 118, 0.08);
+/* ─── Ambient Blobs (Removed) ──────────────────────────── */
+
+/* ─── Background Watermark ─────────────────────────────── */
+.bg-watermark {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 20vw;
+  font-weight: 800;
+  opacity: 0.04;
+  color: #FFFFFF;
+  z-index: 0;
+  pointer-events: none;
+  letter-spacing: 0.1em;
+  font-family: "Exo 2", "Orbitron", sans-serif;
+  white-space: nowrap;
 }
 
 /* ─── Shell ────────────────────────────────────────────── */
@@ -50,10 +50,9 @@ button, input, select { font: inherit; }
 .panel {
   position: relative;
   border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 28px;
-  background: rgba(8, 15, 28, 0.74);
-  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.05);
-  backdrop-filter: blur(18px);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.04);
+  z-index: 1;
 }
 
 /* ─── LANDING SCREEN ───────────────────────────────────── */
@@ -78,14 +77,13 @@ button, input, select { font: inherit; }
 .landing-card {
   width: 100%;
   padding: 40px 36px;
-  border-radius: 28px;
-  background: rgba(8, 15, 28, 0.82);
-  border: 1px solid rgba(0, 230, 118, 0.2);
-  box-shadow: 0 0 60px rgba(0, 230, 118, 0.08), 0 24px 80px rgba(0, 0, 0, 0.4);
-  backdrop-filter: blur(24px);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
   display: flex;
   flex-direction: column;
   gap: 22px;
+  z-index: 1;
 }
 
 .landing-logo {
@@ -197,32 +195,25 @@ button, input, select { font: inherit; }
   color: #00e676;
 }
 
-/* ─── #5 CTA Button — glowing pulse ─────────────────── */
+/* ─── #5 CTA Button ────────────────────────────────────── */
 .ask-btn, .cta-btn {
   padding: 18px 24px;
-  border-radius: 16px;
+  border-radius: 12px;
   border: none;
-  background: linear-gradient(135deg, #00c96a 0%, #00e676 100%);
-  color: #030408;
+  background: #00FF88;
+  color: #0A0F0A;
   font-size: 1.15rem;
   font-weight: 800;
   letter-spacing: 0.04em;
   cursor: pointer;
   transition: all 0.2s ease;
-  box-shadow: 0 8px 28px rgba(0, 230, 118, 0.4), 0 0 0 0 rgba(0,230,118,0.4);
-  animation: ctaPulse 2.5s infinite ease-in-out;
   width: 100%;
 }
 .ask-btn:hover, .cta-btn:hover {
   transform: translateY(-2px);
-  box-shadow: 0 14px 36px rgba(0, 230, 118, 0.55);
+  background: #00e676;
 }
 .ask-btn:active, .cta-btn:active { transform: translateY(0); }
-
-@keyframes ctaPulse {
-  0%, 100% { box-shadow: 0 8px 28px rgba(0,230,118,0.4), 0 0 0 0 rgba(0,230,118,0.3); }
-  50%       { box-shadow: 0 8px 36px rgba(0,230,118,0.6), 0 0 20px 6px rgba(0,230,118,0.15); }
-}
 
 .or-divider {
   text-align: center;
@@ -253,12 +244,11 @@ button, input, select { font: inherit; }
   align-items: center;
   gap: 28px;
   padding: 48px 40px;
-  border-radius: 28px;
-  background: rgba(8, 15, 28, 0.82);
-  border: 1px solid rgba(0, 230, 118, 0.2);
-  box-shadow: 0 0 60px rgba(0, 230, 118, 0.1);
-  backdrop-filter: blur(24px);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
   width: min(460px, calc(100vw - 48px));
+  z-index: 1;
 }
 
 .loading-logo {
@@ -378,13 +368,12 @@ button, input, select { font: inherit; }
 
 .verdict-card {
   padding: 36px 40px;
-  border-radius: 24px;
-  background: rgba(8, 15, 28, 0.82);
-  border: 1px solid rgba(0, 230, 118, 0.22);
-  box-shadow: 0 0 60px rgba(0, 230, 118, 0.07);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
   text-align: center;
-  /* #14 fade in */
   animation: fadeSlideIn 0.4s ease forwards;
+  z-index: 1;
 }
 .verdict-action {
   font-size: 4.5rem;
@@ -424,31 +413,25 @@ button, input, select { font: inherit; }
   gap: 16px;
 }
 
-/* #6 — Agent card: border, rounded corners, left stripe */
+/* #6 — Agent card: flat, white border */
 .agent-card {
   padding: 20px 18px 16px;
   border-radius: 12px;
-  background: rgba(8, 15, 28, 0.85);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  /* border-left provided via inline style */
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
   display: flex;
   flex-direction: column;
   gap: 12px;
-  /* #15 stagger via animationDelay inline */
   opacity: 0;
   animation: fadeSlideIn 0.4s ease forwards;
-  transition: border-color 0.2s, box-shadow 0.2s;
-}
-.agent-card:hover {
-  box-shadow: 0 4px 24px rgba(0,230,118,0.1);
 }
 
 /* Legacy class kept for old code */
 .agent-result-card {
   padding: 22px 20px;
-  border-radius: 20px;
+  border-radius: 12px;
   background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.07);
+  border: 1px solid rgba(255, 255, 255, 0.08);
   display: flex;
   flex-direction: column;
   gap: 10px;
@@ -459,9 +442,6 @@ button, input, select { font: inherit; }
 .agent-result-card.card-visible {
   opacity: 1;
   transform: translateY(0);
-}
-.agent-result-card:hover {
-  border-color: rgba(0, 230, 118, 0.25);
 }
 
 /* #7 — Agent card header */
@@ -595,25 +575,15 @@ button, input, select { font: inherit; }
   align-items: center;
   gap: 5px;
 }
-.risk-chip.ok {
-  background: rgba(0, 230, 118, 0.1);
-  border: 1px solid rgba(0, 230, 118, 0.25);
-  color: #6cffbf;
+.risk-chip.ok, .chip-ok {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.6);
 }
-.chip-ok {
-  background: rgba(0, 230, 118, 0.08);
-  border: 1px solid rgba(0, 230, 118, 0.2);
-  color: #6cffbf;
-}
-.risk-chip.warn {
-  background: rgba(255, 77, 96, 0.1);
-  border: 1px solid rgba(255, 77, 96, 0.25);
-  color: #ff8c97;
-}
-.chip-fail {
-  background: rgba(255, 105, 120, 0.1);
-  border: 1px solid rgba(255, 105, 120, 0.25);
-  color: #ff8c97;
+.risk-chip.warn, .chip-fail {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.6);
 }
 .risk-warning {
   padding: 16px 18px;
@@ -758,6 +728,16 @@ button, input, select { font: inherit; }
 .wrong-network-btn:hover:not(:disabled) { background: rgba(255, 140, 0, 0.22); }
 .wrong-network-btn:disabled { opacity: 0.55; cursor: default; }
 
+/* RainbowKit Overrides */
+[data-testid="rk-connect-button"], [data-testid="rk-account-button"] {
+  background: #00FF88 !important;
+  color: #0A0F0A !important;
+  border-radius: 999px !important;
+  font-weight: 800 !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
 /* ─── Responsive ───────────────────────────────────────── */
 @media (max-width: 760px) {
   .shell { padding: 16px; }
@@ -789,9 +769,8 @@ button, input, select { font: inherit; }
   align-items: center;
   gap: 16px;
   padding: 12px 24px;
-  background: rgba(5,8,14,0.85);
-  border-bottom: 1px solid rgba(0,230,118,0.12);
-  backdrop-filter: blur(12px);
+  background: #0A0F0A;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
   position: sticky; top: 0; z-index: 100;
 }
 .brand-inline {
@@ -808,23 +787,23 @@ button, input, select { font: inherit; }
   justify-content: center;
 }
 
-/* #12 — Active tab = solid green pill, inactive = plain text */
+/* #12 — Active tab = green underline only, inactive = plain text */
 .nav-tab {
   padding: 7px 16px;
-  border-radius: 999px;
   border: none;
   background: transparent;
-  color: rgba(245,247,250,0.5);
+  color: rgba(255, 255, 255, 0.5);
   font-size: 0.85rem;
   font-weight: 600;
+  letter-spacing: 0.08em;
   cursor: pointer;
   transition: all 0.18s;
+  border-bottom: 2px solid transparent;
 }
-.nav-tab:hover { color: #00e676; }
+.nav-tab:hover { color: #FFFFFF; }
 .nav-tab.active {
-  background: #00e676;
-  color: #030408;
-  font-weight: 700;
+  color: #00FF88;
+  border-bottom: 2px solid #00FF88;
 }
 
 /* ─── Landing input group styles ─────────────────────────── */
@@ -1280,27 +1259,23 @@ button, input, select { font: inherit; }
 
 /* ─── Entry Card ────────────────────────────────────────────── */
 .portfolio-entry-card {
-  background: rgba(8,13,28,0.88);
-  border: 1px solid rgba(0,230,118,0.18);
-  border-radius: 24px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
   padding: 40px 36px;
   max-width: 520px;
   margin: 0 auto;
   display: flex;
   flex-direction: column;
   gap: 16px;
-  box-shadow: 0 0 60px rgba(0,230,118,0.07), 0 24px 80px rgba(0,0,0,0.4);
-  backdrop-filter: blur(18px);
+  z-index: 1;
 }
 .portfolio-entry-icon { font-size: 3rem; text-align: center; }
 .portfolio-entry-title {
   margin: 0;
   font-size: 1.8rem;
   font-weight: 800;
-  text-align: center;
-  background: linear-gradient(135deg, #00e676, #6cffbf);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
+  color: #FFFFFF;
 }
 .portfolio-entry-sub {
   margin: 0;
@@ -1407,11 +1382,10 @@ button, input, select { font: inherit; }
 
 /* ─── Health Card ────────────────────────────────────────────── */
 .portfolio-health-card {
-  background: rgba(8,13,28,0.88);
-  border: 1px solid;
-  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
   padding: 28px 32px;
-  backdrop-filter: blur(18px);
   display: flex;
   flex-direction: column;
   gap: 14px;
@@ -1481,18 +1455,14 @@ button, input, select { font: inherit; }
   gap: 14px;
 }
 .portfolio-token-card {
-  background: rgba(8,13,28,0.85);
-  border: 1px solid rgba(255,255,255,0.08);
-  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
   padding: 22px 24px;
   display: flex;
   flex-direction: column;
   gap: 12px;
-  transition: box-shadow 0.2s;
   animation: fadeSlideIn 0.4s ease forwards;
-}
-.portfolio-token-card:hover {
-  box-shadow: 0 4px 24px rgba(0,0,0,0.3);
 }
 .token-card-header {
   display: flex;
@@ -1578,9 +1548,9 @@ button, input, select { font: inherit; }
 
 /* ─── Action Summary Card ────────────────────────────────────── */
 .portfolio-action-card {
-  background: rgba(8,13,28,0.82);
-  border: 1px solid rgba(255,255,255,0.08);
-  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
   padding: 22px 24px;
 }
 .action-group { margin-bottom: 14px; }
@@ -1600,9 +1570,9 @@ button, input, select { font: inherit; }
 
 /* ─── Past Reports ───────────────────────────────────────────── */
 .portfolio-past-reports {
-  background: rgba(8,13,28,0.7);
-  border: 1px solid rgba(255,255,255,0.06);
-  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
   padding: 18px 20px;
 }
 .past-report-row {
@@ -1665,13 +1635,12 @@ button, input, select { font: inherit; }
   animation: fadeSlideIn 0.3s ease;
 }
 .trade-modal-card {
-  background: rgba(6,12,26,0.98);
-  border: 1px solid rgba(0,230,118,0.25);
-  border-radius: 24px;
+  background: #0A0F0A;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
   padding: 28px 28px 24px;
   width: 100%;
   max-width: 480px;
-  box-shadow: 0 0 60px rgba(0,230,118,0.1), 0 40px 80px rgba(0,0,0,0.5);
   display: flex;
   flex-direction: column;
   gap: 14px;
@@ -1831,20 +1800,17 @@ button, input, select { font: inherit; }
 /* Common Agent Card */
 .agent-card {
   padding: 24px;
-  border-radius: 20px;
-  background: rgba(8, 15, 28, 0.7);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.04);
   border: 1px solid rgba(255, 255, 255, 0.08);
-  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.2);
-  backdrop-filter: blur(16px);
   display: flex;
   flex-direction: column;
   gap: 16px;
   transition: transform 0.2s, box-shadow 0.2s;
+  z-index: 1;
 }
 .agent-card:hover {
   transform: translateY(-4px);
-  box-shadow: 0 16px 40px rgba(0, 230, 118, 0.08);
-  border-color: rgba(0, 230, 118, 0.2);
 }
 
 .agent-owner {
@@ -1987,9 +1953,8 @@ button, input, select { font: inherit; }
 }
 .type-card:hover { background: rgba(255, 255, 255, 0.08); }
 .type-card.selected {
-  border-color: #9945FF;
-  background: rgba(153, 69, 255, 0.1);
-  box-shadow: 0 0 16px rgba(153, 69, 255, 0.2);
+  border-color: #00FF88;
+  background: rgba(0, 255, 136, 0.1);
 }
 .type-icon { font-size: 1.5rem; }
 .type-label { font-weight: 700; font-size: 1.05rem; color: #fff; }
@@ -2100,14 +2065,13 @@ textarea:focus { outline: none; border-color: #00e676; }
   display: flex;
   align-items: center;
   gap: 8px;
-  background: rgba(153, 69, 255, 0.15);
-  border: 1px solid rgba(153, 69, 255, 0.4);
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
   color: #fff;
   padding: 8px 14px;
   border-radius: 999px;
   font-size: 0.85rem;
   font-weight: 600;
-  box-shadow: 0 0 10px rgba(153, 69, 255, 0.2);
 }
 .agent-pill button {
   background: transparent;
